@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import {
   createAudioEventMessage,
   parseEventStreamMessage,
-  getSignedTranscribeUrl
+  getSignedTranscribeUrl,
+  TranscribeStreamingService,
+  DEFAULT_INACTIVITY_TIMEOUT_MS,
+  KEEPALIVE_INTERVAL_MS
 } from '../src/services/transcribeService.js';
 import { crc32, utf8Encode } from '../src/utils/crypto.js';
 
@@ -96,3 +99,19 @@ test('getSignedTranscribeUrl constructs compliant SigV4 WebSocket URL', () => {
   assert.ok(url.includes('X-Amz-Signature='));
 });
 
+test('TranscribeStreamingService has 2 minutes (120 seconds) default inactivity timeout', () => {
+  assert.equal(DEFAULT_INACTIVITY_TIMEOUT_MS, 120000); // exactly 120 seconds
+  assert.equal(KEEPALIVE_INTERVAL_MS, 5000); // 5 seconds heartbeat
+
+  let timedOut = false;
+  const service = new TranscribeStreamingService({
+    inactivityTimeoutMs: 120000,
+    onInactivityTimeout: () => {
+      timedOut = true;
+    }
+  });
+
+  assert.equal(service.inactivityTimeoutMs, 120000);
+  assert.equal(typeof service.startKeepAlive, 'function');
+  assert.equal(typeof service.sendSilenceFrame, 'function');
+});

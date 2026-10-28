@@ -208,20 +208,94 @@ export function getSignedTranscribeUrl({
 }
 
 /**
+ * Configuration constants for streaming lifecycle
+ */
+export const DEFAULT_INACTIVITY_TIMEOUT_MS = 120 * 1000; // 2 minutes (120 seconds)
+export const KEEPALIVE_INTERVAL_MS = 5000; // 5 seconds (well within AWS 15-second timeout window)
+
+/**
  * Transcribe Streaming Manager
  */
 export class TranscribeStreamingService {
-  constructor({ onInterimResult, onFinalResult, onError, onStatusChange }) {
+  constructor({
+    onInterimResult,
+    onFinalResult,
+    onError,
+    onStatusChange,
+    onInactivityTimeout,
+    inactivityTimeoutMs = DEFAULT_INACTIVITY_TIMEOUT_MS
+  }) {
     this.onInterimResult = onInterimResult;
     this.onFinalResult = onFinalResult;
     this.onError = onError;
     this.onStatusChange = onStatusChange;
+    this.onInactivityTimeout = onInactivityTimeout;
+    this.inactivityTimeoutMs = inactivityTimeoutMs; // 120,000 ms = 2 minutes
 
     this.socket = null;
     this.isConnected = false;
     this.isPaused = false;
     this.sessionId = null;
     this.processedResultIds = new Set();
+
+    this.lastRealAudioTime = Date.now();
+    this.lastAudioSentTime = Date.now();
+    this.keepAliveInterval = null;
+
+    // Pre-allocated silent PCM chunk (1024 samples = 2048 bytes of zeros)
+    this.silentPcmBuffer = new Uint8Array(2048);
+  }
+
+  /**
+   * Start keep-alive loop to prevent AWS Transcribe's 15-second inactivity disconnect
+   * and enforce the configured 2-minute (120s) inactivity limit.
+   */
+  startKeepAlive() {
+    this.stopKeepAlive();
+    this.keepAliveInterval = setInterval(() => {
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+
+      const now = Date.now();
+      const inactiveDuration = now - this.lastRealAudioTime;
+
+      // Enforce the 2-minute (120 seconds) inactivity timeout
+      if (inactiveDuration >= this.inactivityTimeoutMs) {
+        this.stopKeepAlive();
+        this.disconnect();
+        this.onInactivityTimeout?.();
+        return;
+      }
+
+      // If no audio has been sent in the last 5 seconds, send a silent keepalive frame
+      // to keep Amazon Transcribe's 15-second server timeout from firing
+      if (now - this.lastAudioSentTime >= KEEPALIVE_INTERVAL_MS) {
+        this.sendSilenceFrame();
+      }
+    }, KEEPALIVE_INTERVAL_MS);
+  }
+
+  /**
+   * Stop keep-alive loop
+   */
+  stopKeepAlive() {
+    if (this.keepAliveInterval) {
+      clearInterval(this.keepAliveInterval);
+      this.keepAliveInterval = null;
+    }
+  }
+
+  /**
+   * Send a silent PCM chunk to reset Amazon Transcribe's 15-second inactivity counter
+   */
+  sendSilenceFrame() {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+    try {
+      const eventMessage = createAudioEventMessage(this.silentPcmBuffer);
+      this.socket.send(eventMessage);
+      this.lastAudioSentTime = Date.now();
+    } catch (err) {
+      console.warn('Error sending keep-alive silence chunk:', err);
+    }
   }
 
   /**
@@ -251,6 +325,9 @@ export class TranscribeStreamingService {
 
       this.socket.onopen = () => {
         this.isConnected = true;
+        this.lastRealAudioTime = Date.now();
+        this.lastAudioSentTime = Date.now();
+        this.startKeepAlive();
         this.onStatusChange?.('listening');
       };
 
@@ -275,6 +352,9 @@ export class TranscribeStreamingService {
         // Process Transcript results
         const results = payloadJson?.Transcript?.Results;
         if (!results || results.length === 0) return;
+
+        // Reset inactivity timer when transcripts arrive
+        this.lastRealAudioTime = Date.now();
 
         for (const res of results) {
           const isPartial = res.IsPartial;
@@ -317,12 +397,14 @@ export class TranscribeStreamingService {
       };
 
       this.socket.onclose = (evt) => {
+        this.stopKeepAlive();
         this.isConnected = false;
         if (!this.isPaused) {
           this.onStatusChange?.(evt.wasClean ? 'idle' : 'disconnected');
         }
       };
     } catch (err) {
+      this.stopKeepAlive();
       this.isConnected = false;
       this.onStatusChange?.('error');
       this.onError?.(err);
@@ -339,6 +421,10 @@ export class TranscribeStreamingService {
     }
 
     try {
+      const now = Date.now();
+      this.lastRealAudioTime = now;
+      this.lastAudioSentTime = now;
+
       const eventMessage = createAudioEventMessage(pcmBytes);
       this.socket.send(eventMessage);
     } catch (err) {
@@ -352,6 +438,8 @@ export class TranscribeStreamingService {
   pause() {
     this.isPaused = true;
     this.onStatusChange?.('paused');
+    // KeepAlive continues sending silent frames while paused to keep the stream
+    // ready for up to 2 minutes (120 seconds).
   }
 
   /**
@@ -359,12 +447,16 @@ export class TranscribeStreamingService {
    */
   resume(credentials) {
     this.isPaused = false;
+    this.lastRealAudioTime = Date.now();
+    this.lastAudioSentTime = Date.now();
+
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       if (credentials) {
         this.connect(credentials);
       }
     } else {
       this.onStatusChange?.('listening');
+      this.startKeepAlive();
     }
   }
 
@@ -372,6 +464,7 @@ export class TranscribeStreamingService {
    * Disconnect and cleanup
    */
   disconnect() {
+    this.stopKeepAlive();
     this.isConnected = false;
     this.isPaused = false;
     if (this.socket) {

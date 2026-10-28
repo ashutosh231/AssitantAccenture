@@ -124,8 +124,15 @@ export function AppProvider({ children }) {
       // 2. Initialize Transcribe Streaming Service if needed
       if (!transcribeServiceRef.current) {
         transcribeServiceRef.current = new TranscribeStreamingService({
+          inactivityTimeoutMs: 120 * 1000, // 2 minutes (120 seconds) inactivity timeout
           onInterimResult: handleInterimResult,
           onFinalResult: handleFinalResult,
+          onInactivityTimeout: () => {
+            if (audioCaptureRef.current) {
+              audioCaptureRef.current.pause();
+            }
+            setListeningStatus('paused');
+          },
           onError: (err) => {
             console.error('Transcribe error:', err);
             setTranscribeError(err.message || 'Transcription error occurred.');
