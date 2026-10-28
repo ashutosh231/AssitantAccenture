@@ -1,11 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Volume2, Info, AlertTriangle, Sparkles, ChevronDown, Mic, Clock, Gauge } from 'lucide-react';
+import { Volume2, Info, AlertTriangle, Sparkles, ChevronDown, Mic, Clock, Gauge, Copy, Check } from 'lucide-react';
 import { useTranscription } from '../hooks/useTranscription';
 import { AssessmentTypeSelector } from '../components/AssessmentTypeSelector';
 import { AudioWaveform } from '../components/AudioWaveform';
-import { TranscriptSegment } from '../components/TranscriptSegment';
 import { RecordingControls } from '../components/RecordingControls';
 import { AssessmentPickerModal } from '../components/AssessmentPickerModal';
+import { countWords } from '../utils/transcriptHelpers';
 
 export function AITranscribeScreen() {
   const {
@@ -26,6 +26,7 @@ export function AITranscribeScreen() {
   } = useTranscription();
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const scrollBottomRef = useRef(null);
 
   // Auto-scroll when new text or segments arrive
@@ -36,6 +37,21 @@ export function AITranscribeScreen() {
   }, [finalizedSegments, interimTranscript]);
 
   const hasContent = !!(finalizedSegments.length > 0 || interimTranscript.trim());
+
+  // Compile finalized text into a single continuous paragraph (no separate boxes on pause)
+  const finalizedText = finalizedSegments
+    .map((s) => s.text?.trim())
+    .filter(Boolean)
+    .join(' ');
+
+  const totalWords = countWords(liveTranscriptText);
+
+  const handleCopyTranscript = () => {
+    if (!liveTranscriptText) return;
+    navigator.clipboard.writeText(liveTranscriptText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleOpenPicker = () => {
     if (!hasContent) {
@@ -105,7 +121,7 @@ export function AITranscribeScreen() {
             sessionDuration={sessionDuration}
           />
 
-          {/* 3. Nested 2-column Grid for Bento Metrics */}
+          {/* Nested 2-column Grid for Bento Metrics */}
           <div className="bento-metric-grid">
             <div className="bento-metric-card">
               <div className="bento-icon-circle">
@@ -130,7 +146,7 @@ export function AITranscribeScreen() {
             </div>
           </div>
 
-          {/* 4. Alert / Info box at bottom using #b7c6c2/20 background */}
+          {/* Alert / Info box at bottom using #b7c6c2/20 background */}
           <div className="hero-alert-box">
             <Info size={18} color="#576561" style={{ flexShrink: 0 }} />
             <span className="hero-alert-text">
@@ -147,41 +163,73 @@ export function AITranscribeScreen() {
           </div>
         )}
 
-        {/* 4. Secondary Feed Items: Finalized & Interim Segments */}
+        {/* 4. Single Unified Transcript Box (All speech kept in 1 continuous box, even across pauses) */}
         <div style={styles.feedSection}>
           <div style={styles.feedHeaderRow}>
-            <span style={styles.feedHeaderLabel}>LIVE CAPTURED FEED</span>
-            {hasContent && (
-              <span style={styles.feedCountLabel}>
-                {finalizedSegments.length} segment{finalizedSegments.length === 1 ? '' : 's'}
-              </span>
-            )}
+            <span style={styles.feedHeaderLabel}>LIVE CAPTURED TRANSCRIPT</span>
+            <span style={styles.feedCountLabel}>
+              {totalWords} word{totalWords === 1 ? '' : 's'}
+            </span>
           </div>
 
-          {!hasContent ? (
-            <div style={styles.emptyFeedBox}>
-              <Volume2 size={32} color="#b7c6c2" />
-              <p style={styles.emptyFeedTitle}>No speech captured yet</p>
-              <p style={styles.emptyFeedSub}>
-                Tap <strong>Listen</strong> below or use the red center action button when your laptop AI speaks.
-              </p>
-            </div>
-          ) : (
-            <div style={styles.segmentsStack}>
-              {finalizedSegments.map((segment) => (
-                <TranscriptSegment key={segment.id || segment.timestamp} segment={segment} />
-              ))}
+          <div className="feed-card" style={styles.unifiedCard}>
+            {/* Box Header */}
+            <div style={styles.boxTopRow}>
+              <div style={styles.boxTitleGroup}>
+                <div className="feed-icon-56" style={{ width: '42px', height: '42px', borderRadius: '14px' }}>
+                  <Volume2 size={20} />
+                </div>
+                <div>
+                  <div style={styles.boxTagRow}>
+                    <span style={styles.boxTitle}>CONTINUOUS SPEECH FEED</span>
+                    {listeningStatus === 'listening' && (
+                      <span style={styles.liveBadge}>
+                        <span style={styles.livePulseDot} /> LIVE
+                      </span>
+                    )}
+                  </div>
+                  <span style={styles.boxSub}>
+                    {hasContent ? 'Unified into 1 box across all pauses' : 'Waiting for laptop audio...'}
+                  </span>
+                </div>
+              </div>
 
-              {interimTranscript && (
-                <TranscriptSegment segment={{ text: interimTranscript }} isInterim={true} />
+              {hasContent && (
+                <button
+                  onClick={handleCopyTranscript}
+                  className="feed-action-btn-40"
+                  title="Copy full transcript"
+                  aria-label="Copy full transcript"
+                >
+                  {copied ? <Check size={18} color="#ffffff" /> : <Copy size={18} />}
+                </button>
               )}
-
-              <div ref={scrollBottomRef} style={{ height: '4px' }} />
             </div>
-          )}
+
+            {/* Box Body: Continuous Text */}
+            <div style={styles.boxBody}>
+              {!hasContent ? (
+                <p style={styles.placeholderText}>
+                  Tap <strong>Listen</strong> below. Words spoken by your laptop will flow continuously into this box as a single passage without creating separate boxes on pauses.
+                </p>
+              ) : (
+                <p style={styles.continuousText}>
+                  {finalizedText}
+                  {interimTranscript && (
+                    <span style={styles.interimText}>
+                      {finalizedText ? ' ' : ''}
+                      {interimTranscript}
+                      <span style={styles.pulsingInlineDot} />
+                    </span>
+                  )}
+                </p>
+              )}
+              <div ref={scrollBottomRef} style={{ height: '2px' }} />
+            </div>
+          </div>
         </div>
 
-        {/* Bottom Recording Controls */}
+        {/* 5. Bottom Recording Controls */}
         <RecordingControls
           listeningStatus={listeningStatus}
           hasContent={hasContent}
@@ -192,7 +240,7 @@ export function AITranscribeScreen() {
         />
       </div>
 
-      {/* Assessment Type Selection Bottom Sheet */}
+      {/* 6. Assessment Type Selection Bottom Sheet */}
       <AssessmentPickerModal
         isOpen={isPickerOpen}
         onClose={() => setIsPickerOpen(false)}
@@ -265,7 +313,7 @@ const styles = {
   feedSection: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '10px'
+    gap: '8px'
   },
   feedHeaderRow: {
     display: 'flex',
@@ -285,31 +333,93 @@ const styles = {
     fontWeight: '700',
     color: '#576561'
   },
-  segmentsStack: {
-    display: 'flex',
+  unifiedCard: {
     flexDirection: 'column',
+    gap: '12px',
+    minHeight: '130px',
+    padding: '16px 18px'
+  },
+  boxTopRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%'
+  },
+  boxTitleGroup: {
+    display: 'flex',
+    alignItems: 'center',
     gap: '10px'
   },
-  emptyFeedBox: {
-    backgroundColor: '#ffffff',
-    borderRadius: '24px',
-    border: '1px solid rgba(183, 198, 194, 0.3)',
-    padding: '24px 16px',
+  boxTagRow: {
     display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
-    textAlign: 'center',
-    gap: '6px'
+    gap: '8px'
   },
-  emptyFeedTitle: {
-    fontSize: '15px',
+  boxTitle: {
+    fontSize: '13.5px',
     fontWeight: '800',
-    color: '#576561'
+    color: '#171e19'
   },
-  emptyFeedSub: {
-    fontSize: '12.5px',
+  liveBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '9.5px',
+    fontWeight: '800',
+    color: '#ca0013',
+    backgroundColor: 'rgba(202, 0, 19, 0.08)',
+    padding: '1px 6px',
+    borderRadius: '6px'
+  },
+  livePulseDot: {
+    width: '6px',
+    height: '6px',
+    borderRadius: '50%',
+    backgroundColor: '#ca0013',
+    boxShadow: '0 0 6px rgba(202, 0, 19, 0.8)'
+  },
+  boxSub: {
+    fontSize: '11.5px',
+    fontWeight: '600',
+    color: '#7b8a86'
+  },
+  boxBody: {
+    paddingTop: '6px',
+    borderTop: '1px solid rgba(183, 198, 194, 0.25)',
+    width: '100%',
+    maxHeight: '260px',
+    overflowY: 'auto'
+  },
+  placeholderText: {
+    fontSize: '13px',
+    fontWeight: '600',
     color: '#7b8a86',
-    lineHeight: '1.4',
-    maxWidth: '280px'
+    lineHeight: '1.5',
+    fontStyle: 'italic'
+  },
+  continuousText: {
+    fontSize: '15.5px',
+    fontWeight: '700',
+    color: '#171e19',
+    lineHeight: '1.6',
+    whiteSpace: 'pre-wrap',
+    userSelect: 'text'
+  },
+  interimText: {
+    color: '#ca0013',
+    fontStyle: 'italic',
+    fontWeight: '700',
+    display: 'inline'
+  },
+  pulsingInlineDot: {
+    display: 'inline-block',
+    width: '7px',
+    height: '7px',
+    borderRadius: '50%',
+    backgroundColor: '#ca0013',
+    marginLeft: '6px',
+    verticalAlign: 'middle',
+    boxShadow: '0 0 6px rgba(202, 0, 19, 0.7)',
+    animation: 'pulse-interim 1.2s infinite ease-in-out'
   }
 };
