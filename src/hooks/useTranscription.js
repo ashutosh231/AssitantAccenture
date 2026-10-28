@@ -15,3 +15,4 @@ export function useTranscription() {
     estimatedDurationSec: estimateSpeechDuration(app.liveTranscriptText)
   };
 }
+

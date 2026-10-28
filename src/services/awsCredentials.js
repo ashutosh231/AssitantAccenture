@@ -222,3 +222,4 @@ export function clearCustomCredentials() {
   localStorage.removeItem('acc_cognito_pool_id');
   cachedCognitoCreds = null;
 }
+

@@ -231,3 +231,4 @@ export function hmacSha256Sync(key, message) {
 export function sha256HexSync(data) {
   return toHex(pureJsSha256(data));
 }
+

@@ -69,3 +69,4 @@ test('compileTranscriptText combines finalized segments and interim text', () =>
   const combined = compileTranscriptText(segments, 'How did you resolve it?');
   assert.equal(combined, 'Describe a situation where you disagreed with a colleague. How did you resolve it?');
 });
+

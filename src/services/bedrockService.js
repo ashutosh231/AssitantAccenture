@@ -193,9 +193,15 @@ function signAwsRequest({
   const canonicalHeaders = sortedHeaderKeys.map((k) => `${k}:${headers[k]}\n`).join('');
   const signedHeaders = sortedHeaderKeys.join(';');
 
+  // AWS SigV4 Canonical URI: each path segment must be URI encoded (double-encoded for percent-encoded characters)
+  const canonicalUri = parsedUrl.pathname
+    .split('/')
+    .map((seg) => encodeURIComponent(seg))
+    .join('/');
+
   const canonicalRequest = [
     method,
-    parsedUrl.pathname,
+    canonicalUri,
     parsedUrl.search ? parsedUrl.search.slice(1) : '',
     canonicalHeaders,
     signedHeaders,
@@ -271,12 +277,16 @@ export async function generateBedrockAnswer({ transcriptText, assessmentType, cr
     }
   });
 
-  // Try inference profile ID if model requires inference profile (e.g. us.openai.gpt-6.1-terra)
-  const candidateModelIds = [
-    modelId,
-    `us.${modelId}`,
-    `global.${modelId}`
-  ];
+  // Try inference profile ID if model requires inference profile (e.g. us.amazon.nova-2-lite-v1:0 or us.openai.gpt-6.1-terra)
+  const candidateModelIds = [];
+  if (modelId.startsWith('us.') || modelId.startsWith('global.') || modelId.startsWith('eu.')) {
+    candidateModelIds.push(modelId);
+  } else {
+    // Bedrock foundation models and Nova models require regional inference profiles
+    candidateModelIds.push(`us.${modelId}`);
+    candidateModelIds.push(modelId);
+    candidateModelIds.push(`global.${modelId}`);
+  }
 
   let lastError = null;
 
@@ -291,8 +301,12 @@ export async function generateBedrockAnswer({ transcriptText, assessmentType, cr
       return result;
     } catch (err) {
       lastError = err;
-      // If error is about invalid model id, try next candidate
-      if (err.message?.includes('ValidationException') && err.message?.includes('inference profile')) {
+      // If error is about invalid model id or on-demand throughput requiring inference profile, try next candidate
+      if (
+        err.message?.includes('ValidationException') ||
+        err.message?.includes('inference profile') ||
+        err.message?.includes('on-demand throughput')
+      ) {
         continue;
       }
       // For permission/access errors, do not retry other prefixes

@@ -103,3 +103,4 @@ export function appendSegmentDeduplicated(existingSegments, newSegment) {
 
   return [...existingSegments, { ...newSegment, text: newSegment.text.trim() }];
 }
+

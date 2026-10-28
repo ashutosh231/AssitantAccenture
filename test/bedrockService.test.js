@@ -72,3 +72,4 @@ test('buildSystemPrompt builds specific instructions for each assessment categor
   assert.ok(emailPrompt.includes('Body:'));
   assert.ok(emailPrompt.includes('Closing:'));
 });
+

@@ -288,3 +288,4 @@ export class AudioCaptureService {
     this.onAudioLevel?.({ volume: 0, frequencyData: new Uint8Array(32) });
   }
 }
+

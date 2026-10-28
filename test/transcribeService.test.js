@@ -95,3 +95,4 @@ test('getSignedTranscribeUrl constructs compliant SigV4 WebSocket URL', () => {
   assert.ok(url.includes('sample-rate=16000'));
   assert.ok(url.includes('X-Amz-Signature='));
 });
+

@@ -196,3 +196,4 @@ const styles = {
     boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
   }
 };
+
