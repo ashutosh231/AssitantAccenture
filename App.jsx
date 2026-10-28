@@ -1,5 +1,4 @@
 import React from 'react';
-import { Settings, Sparkles, Radio } from 'lucide-react';
 import { AppProvider, useApp } from './src/context/AppContext';
 import { BottomNavbar } from './src/components/BottomNavbar';
 import { AITranscribeScreen } from './src/screens/AITranscribeScreen';
@@ -13,55 +12,46 @@ function AppContent() {
     setActiveTab,
     listeningStatus,
     generatedAnswer,
+    liveTranscriptText,
     isSettingsOpen,
     setIsSettingsOpen,
     credentialsConfig,
     handleSaveSettings,
-    handleClearSettings
+    handleClearSettings,
+    handleSendToAI
   } = useApp();
 
   const isListening = listeningStatus === 'listening';
-  const hasAnswer = !!generatedAnswer;
+  const hasContent = !!liveTranscriptText?.trim();
+
+  // Handle center floating FAB click
+  const handleCenterAction = () => {
+    if (activeTab === 'transcribe') {
+      handleSendToAI();
+    } else {
+      setActiveTab('transcribe');
+    }
+  };
 
   return (
     <div className="app-container">
-      {/* Native-like Mobile App Header */}
+      {/* Header: Top-aligned with greeting label and 30px bold name, plus 48px avatar */}
       <header className="app-header">
-        <div className="brand-wrapper">
-          <div className="brand-logo-icon">ACC</div>
-          <div>
-            <h1 className="brand-title">Accenture Comm Assistant</h1>
-            <p className="brand-subtitle">AI Listening & Answer Prep</p>
-          </div>
+        <div className="header-left">
+          <span className="header-greeting-label">ACCENTURE ASSESSMENT</span>
+          <h1 className="header-title-bold">Comm AI</h1>
         </div>
 
-        <div className="header-actions">
-          {/* Live indicator pill in header */}
-          {isListening && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '3px 8px',
-                borderRadius: '12px',
-                backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                border: '1px solid rgba(16, 185, 129, 0.3)'
-              }}
-            >
-              <div className="badge-live-pulse" />
-              <span style={{ fontSize: '10px', fontWeight: '700', color: '#34d399' }}>LIVE</span>
-            </div>
-          )}
-
-          {/* Settings button */}
+        <div className="header-right">
+          {/* 48px circular profile with 2px white border and 16px red notification badge */}
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="btn-icon"
-            title="AWS & Audio Settings"
+            className="avatar-wrapper"
+            title="Configure AWS & Audio Settings"
             aria-label="Settings"
           >
-            <Settings size={18} />
+            <span className="avatar-initials">AC</span>
+            <div className={`avatar-badge-red ${isListening ? 'live' : ''}`} />
           </button>
         </div>
       </header>
@@ -93,12 +83,13 @@ function AppContent() {
         </div>
       </main>
 
-      {/* Fixed Bottom Navigation (Exactly 2 Tabs) */}
+      {/* Floating Navigation Pill with Center Action FAB */}
       <BottomNavbar
         activeTab={activeTab}
         onTabChange={setActiveTab}
         isListening={isListening}
-        hasAnswer={hasAnswer}
+        hasContent={hasContent}
+        onCenterAction={handleCenterAction}
       />
 
       {/* Settings Modal */}

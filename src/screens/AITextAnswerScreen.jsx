@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Quote, Clock, RefreshCw, Sparkles, AlertCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Quote, Sparkles } from 'lucide-react';
 import { useTranscription } from '../hooks/useTranscription';
 import { AssessmentTypeSelector } from '../components/AssessmentTypeSelector';
 import { AnswerCard } from '../components/AnswerCard';
-import { countWords, formatDuration } from '../utils/transcriptHelpers';
+import { countWords } from '../utils/transcriptHelpers';
 
 export function AITextAnswerScreen() {
   const {
@@ -20,7 +20,6 @@ export function AITextAnswerScreen() {
 
   const [isSnapshotExpanded, setIsSnapshotExpanded] = useState(true);
 
-  // If there's no snapshot yet, but live transcript exists
   const hasLiveTranscript = !!liveTranscriptText?.trim();
   const hasSnapshot = !!submittedSnapshot?.text;
 
@@ -43,59 +42,64 @@ export function AITextAnswerScreen() {
 
   return (
     <div className="screen" style={styles.screen}>
-      {/* 1. Assessment Type Selector */}
-      <AssessmentTypeSelector
-        selectedType={selectedAssessmentType}
-        onSelectType={handleSelectType}
-      />
+      <div className="scroll-content">
+        {/* 1. Horizontal Scroll Selector: 7 Categories with 56x56 square & 160px active pill */}
+        <AssessmentTypeSelector
+          selectedType={selectedAssessmentType}
+          onSelectType={handleSelectType}
+        />
 
-      <div style={styles.scrollContent}>
-        {/* 2. Submitted Question / Transcript Snapshot Card */}
-        <div style={styles.snapshotCard}>
+        {/* 2. Secondary Feed Item: Captured Question Snapshot Card (24px radius, 52px icon, 40px button) */}
+        <div className="feed-card" style={{ flexDirection: 'column', gap: '8px' }}>
           <div
-            style={styles.snapshotHeader}
+            style={styles.feedCardTop}
             onClick={() => setIsSnapshotExpanded(!isSnapshotExpanded)}
           >
-            <div style={styles.snapshotHeaderLeft}>
-              <Quote size={15} color="#60a5fa" />
-              <span style={styles.snapshotTitle}>
-                {submittedSnapshot ? 'Captured Question Snapshot' : 'Current Live Transcript'}
-              </span>
-              <span style={styles.snapshotBadge}>{snapshotWordCount} words</span>
+            <div className="feed-icon-56" style={{ width: '44px', height: '44px' }}>
+              <Quote size={20} />
             </div>
-            <button style={styles.toggleBtn}>
+
+            <div style={styles.feedCardHeaderInfo}>
+              <div style={styles.feedCardTitleRow}>
+                <span className="feed-title" style={{ fontSize: '15px' }}>
+                  {submittedSnapshot ? 'Captured Question' : 'Current Live Speech'}
+                </span>
+                <span style={styles.wordBadge}>{snapshotWordCount} words</span>
+              </div>
+              <span style={styles.feedCardSub}>
+                {submittedSnapshot ? 'Immutable snapshot submitted to AI' : 'Speech captured from laptop'}
+              </span>
+            </div>
+
+            <button style={styles.toggleBtn} aria-label="Toggle Question View">
               {isSnapshotExpanded ? (
-                <ChevronUp size={16} color="#94a3b8" />
+                <ChevronUp size={18} color="#576561" />
               ) : (
-                <ChevronDown size={16} color="#94a3b8" />
+                <ChevronDown size={18} color="#576561" />
               )}
             </button>
           </div>
 
           {isSnapshotExpanded && (
-            <div style={styles.snapshotBody}>
+            <div style={styles.feedCardBody}>
               {snapshotText ? (
-                <p style={styles.snapshotText}>"{snapshotText}"</p>
+                <p style={styles.snapshotQuote}>"{snapshotText}"</p>
               ) : (
-                <p style={styles.snapshotPlaceholder}>
-                  No speech captured yet. Go to the <strong>AI Transcribe</strong> tab to listen to your laptop's question.
+                <p style={styles.placeholderText}>
+                  No speech captured yet. Switch to <strong>AI Transcribe</strong> to listen to the question.
                 </p>
               )}
 
-              {/* If snapshot not submitted yet, show Get Answer shortcut button */}
               {!submittedSnapshot && hasLiveTranscript && (
-                <div style={styles.getAnswerRow}>
-                  <button onClick={handleGetAnswerForLive} style={styles.btnQuickSubmit}>
-                    <Sparkles size={14} />
-                    <span>Generate Answer for This Question</span>
-                  </button>
-                </div>
+                <button onClick={handleGetAnswerForLive} className="btn-primary-red" style={{ marginTop: '8px' }}>
+                  <Sparkles size={14} /> Generate Answer for this Question
+                </button>
               )}
             </div>
           )}
         </div>
 
-        {/* 3. Generated Answer Card */}
+        {/* 3. Hero Feature Card: Formatted according to the assessment */}
         <AnswerCard
           answer={generatedAnswer}
           status={bedrockStatus}
@@ -116,92 +120,66 @@ const styles = {
     flexDirection: 'column',
     height: '100%',
     overflow: 'hidden',
-    backgroundColor: '#080c15'
+    backgroundColor: '#eeebe3'
   },
-  scrollContent: {
-    flex: 1,
-    overflowY: 'auto',
-    padding: '14px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '14px'
-  },
-  snapshotCard: {
-    backgroundColor: '#0e1628',
-    borderRadius: '14px',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    overflow: 'hidden'
-  },
-  snapshotHeader: {
-    padding: '10px 14px',
+  feedCardTop: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    cursor: 'pointer',
-    backgroundColor: 'rgba(23, 34, 57, 0.4)'
+    gap: '12px',
+    width: '100%',
+    cursor: 'pointer'
   },
-  snapshotHeaderLeft: {
+  feedCardHeaderInfo: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1px'
+  },
+  feedCardTitleRow: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px'
   },
-  snapshotTitle: {
-    fontSize: '12px',
-    fontWeight: '700',
-    color: '#cbd5e1',
-    letterSpacing: '0.2px'
-  },
-  snapshotBadge: {
+  wordBadge: {
     fontSize: '10px',
-    fontWeight: '600',
-    color: '#60a5fa',
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    padding: '2px 6px',
+    fontWeight: '800',
+    color: '#ca0013',
+    backgroundColor: 'rgba(202, 0, 19, 0.08)',
+    padding: '2px 8px',
     borderRadius: '10px'
+  },
+  feedCardSub: {
+    fontSize: '11.5px',
+    fontWeight: '600',
+    color: '#7b8a86'
   },
   toggleBtn: {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    padding: '2px',
+    padding: '4px',
     display: 'flex',
     alignItems: 'center'
   },
-  snapshotBody: {
-    padding: '12px 14px',
-    borderTop: '1px solid rgba(255, 255, 255, 0.05)'
-  },
-  snapshotText: {
-    fontSize: '13.5px',
-    lineHeight: '1.55',
-    color: '#e2e8f0',
-    fontStyle: 'italic',
-    userSelect: 'text',
-    wordBreak: 'break-word'
-  },
-  snapshotPlaceholder: {
-    fontSize: '12.5px',
-    color: '#64748b',
-    fontStyle: 'italic'
-  },
-  getAnswerRow: {
-    marginTop: '10px',
+  feedCardBody: {
+    paddingTop: '6px',
+    borderTop: '1px solid rgba(183, 198, 194, 0.25)',
     display: 'flex',
-    justifyContent: 'flex-start'
+    flexDirection: 'column',
+    gap: '8px'
   },
-  btnQuickSubmit: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '8px 14px',
-    borderRadius: '10px',
-    border: 'none',
-    backgroundColor: '#8b5cf6',
-    color: '#ffffff',
-    fontSize: '12px',
+  snapshotQuote: {
+    fontSize: '13.5px',
     fontWeight: '600',
-    cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
+    color: '#171e19',
+    lineHeight: '1.5',
+    fontStyle: 'italic',
+    userSelect: 'text'
+  },
+  placeholderText: {
+    fontSize: '12.5px',
+    color: '#7b8a86',
+    fontStyle: 'italic'
   }
 };
-

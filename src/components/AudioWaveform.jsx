@@ -8,13 +8,11 @@ export function AudioWaveform({ listeningStatus, audioLevel, sessionDuration }) 
   const isConnecting = listeningStatus === 'connecting';
   const isError = listeningStatus === 'error';
 
-  // Extract 24 frequency bars for display
+  // Extract 24 frequency bars
   const bars = Array.from({ length: 24 }).map((_, i) => {
     if (!isListening) return 4;
     const freq = audioLevel?.frequencyData?.[i] || 0;
-    // Map 0-255 to height 4px - 38px
-    const dynamicHeight = Math.max(4, Math.min(38, Math.round((freq / 255) * 38)));
-    return dynamicHeight;
+    return Math.max(4, Math.min(32, Math.round((freq / 255) * 32)));
   });
 
   return (
@@ -24,42 +22,37 @@ export function AudioWaveform({ listeningStatus, audioLevel, sessionDuration }) 
         <div
           style={{
             ...styles.statusPill,
+            backgroundColor: isListening
+              ? 'rgba(202, 0, 19, 0.08)'
+              : 'rgba(183, 198, 194, 0.2)',
             borderColor: isListening
-              ? 'rgba(16, 185, 129, 0.4)'
-              : isPaused
-              ? 'rgba(245, 158, 11, 0.4)'
-              : isError
-              ? 'rgba(239, 68, 68, 0.4)'
-              : 'rgba(255, 255, 255, 0.1)'
+              ? 'rgba(202, 0, 19, 0.25)'
+              : 'rgba(183, 198, 194, 0.3)'
           }}
         >
-          {isListening && <div className="badge-live-pulse" />}
-          {isPaused && <Pause size={12} color="#f59e0b" />}
+          {isListening && <div style={styles.pulseDot} />}
+          {isPaused && <Pause size={11} color="#ca0013" />}
           {isConnecting && <div style={styles.connectingDot} />}
-          {isError && <AlertCircle size={12} color="#ef4444" />}
-          {!isListening && !isPaused && !isConnecting && !isError && <WifiOff size={12} color="#64748b" />}
+          {isError && <AlertCircle size={11} color="#ca0013" />}
+          {!isListening && !isPaused && !isConnecting && !isError && (
+            <WifiOff size={11} color="#7b8a86" />
+          )}
 
           <span
             style={{
               ...styles.statusText,
-              color: isListening
-                ? '#34d399'
-                : isPaused
-                ? '#fbbf24'
-                : isError
-                ? '#f87171'
-                : '#94a3b8'
+              color: isListening ? '#ca0013' : '#576561'
             }}
           >
             {isListening
-              ? 'LISTENING TO LAPTOP'
+              ? 'LIVE LISTENING'
               : isPaused
-              ? 'PAUSED'
+              ? 'SESSION PAUSED'
               : isConnecting
               ? 'CONNECTING TO AWS...'
               : isError
-              ? 'AUDIO ERROR'
-              : 'STANDBY'}
+              ? 'MIC ERROR'
+              : 'READY TO LISTEN'}
           </span>
         </div>
 
@@ -79,10 +72,10 @@ export function AudioWaveform({ listeningStatus, audioLevel, sessionDuration }) 
               ...styles.waveBar,
               height: `${height}px`,
               backgroundColor: isListening
-                ? `rgba(96, 165, 250, ${0.4 + (height / 38) * 0.6})`
-                : isPaused
-                ? '#f59e0b44'
-                : 'rgba(255, 255, 255, 0.08)'
+                ? idx % 2 === 0
+                  ? '#ca0013'
+                  : '#171e19'
+                : '#b7c6c2'
             }}
           />
         ))}
@@ -93,9 +86,11 @@ export function AudioWaveform({ listeningStatus, audioLevel, sessionDuration }) 
 
 const styles = {
   container: {
-    padding: '12px 16px',
-    backgroundColor: '#0c1322',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+    padding: '12px 14px',
+    backgroundColor: '#ffffff',
+    borderRadius: '24px',
+    border: '1px solid rgba(183, 198, 194, 0.25)',
+    boxShadow: '0 4px 16px rgba(23, 30, 25, 0.04)',
     display: 'flex',
     flexDirection: 'column',
     gap: '10px'
@@ -108,55 +103,59 @@ const styles = {
   statusPill: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '7px',
+    gap: '6px',
     padding: '4px 10px',
-    borderRadius: '20px',
-    backgroundColor: 'rgba(15, 23, 42, 0.7)',
-    border: '1px solid rgba(255, 255, 255, 0.1)'
+    borderRadius: '9999px',
+    border: '1px solid'
+  },
+  pulseDot: {
+    width: '7px',
+    height: '7px',
+    borderRadius: '50%',
+    backgroundColor: '#ca0013',
+    boxShadow: '0 0 6px rgba(202, 0, 19, 0.6)'
   },
   connectingDot: {
-    width: '8px',
-    height: '8px',
+    width: '7px',
+    height: '7px',
     borderRadius: '50%',
-    backgroundColor: '#38bdf8'
+    backgroundColor: '#576561'
   },
   statusText: {
-    fontSize: '11px',
-    fontWeight: '700',
-    letterSpacing: '0.4px'
+    fontSize: '10px',
+    fontWeight: '800',
+    letterSpacing: '0.8px',
+    textTransform: 'uppercase'
   },
   timerWrapper: {
     display: 'flex',
     alignItems: 'baseline',
-    gap: '6px'
+    gap: '5px'
   },
   timerLabel: {
-    fontSize: '10px',
-    fontWeight: '600',
-    color: '#64748b',
-    letterSpacing: '0.5px'
+    fontSize: '9px',
+    fontWeight: '800',
+    color: '#7b8a86',
+    letterSpacing: '0.8px'
   },
   timerValue: {
-    fontSize: '14px',
-    fontWeight: '700',
-    color: '#f8fafc',
-    fontVariantNumeric: 'tabular-nums',
-    letterSpacing: '0.5px'
+    fontSize: '13px',
+    fontWeight: '900',
+    color: '#171e19',
+    fontVariantNumeric: 'tabular-nums'
   },
   waveformTrack: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: '42px',
+    height: '36px',
     padding: '0 4px',
-    backgroundColor: 'rgba(5, 10, 20, 0.6)',
-    borderRadius: '10px',
-    border: '1px solid rgba(255, 255, 255, 0.04)'
+    backgroundColor: 'rgba(238, 235, 227, 0.5)',
+    borderRadius: '14px'
   },
   waveBar: {
-    width: '6px',
+    width: '4.5px',
     borderRadius: '3px',
     transition: 'height 0.08s ease, background-color 0.2s ease'
   }
 };
-

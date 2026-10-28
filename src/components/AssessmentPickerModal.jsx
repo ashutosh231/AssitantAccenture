@@ -38,34 +38,36 @@ export function AssessmentPickerModal({
   return (
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.sheet} onClick={(e) => e.stopPropagation()}>
-        {/* Handle bar */}
+        {/* Drag handle */}
         <div style={styles.dragHandle} />
 
         {/* Header */}
         <div style={styles.header}>
           <div>
             <div style={styles.titleRow}>
-              <Sparkles size={18} color="#a855f7" />
+              <div style={styles.sparkleCircle}>
+                <Sparkles size={16} color="#ffffff" />
+              </div>
               <h2 style={styles.title}>Select Assessment Type</h2>
             </div>
             <p style={styles.subtitle}>
-              Choose the question format to generate the tailored response
+              Format the AI response to match the exact assessment rubric
             </p>
           </div>
           <button onClick={onClose} style={styles.closeBtn} aria-label="Close">
-            <X size={18} color="#94a3b8" />
+            <X size={20} color="#576561" />
           </button>
         </div>
 
         {/* Question Snapshot Preview */}
         {previewText && (
           <div style={styles.previewBox}>
-            <span style={styles.previewLabel}>CAPTURED QUESTION:</span>
+            <span style={styles.previewLabel}>CAPTURED QUESTION PREVIEW</span>
             <p style={styles.previewText}>"{truncatedPreview}"</p>
           </div>
         )}
 
-        {/* 8 Assessment Options Grid / List */}
+        {/* 7 Assessment Options Grid / List with 24px radius cards */}
         <div style={styles.optionsList}>
           {ASSESSMENT_TYPES.map((type) => {
             const IconComp = ICON_MAP[type.icon] || Sparkles;
@@ -77,21 +79,15 @@ export function AssessmentPickerModal({
                 onClick={() => onSelectAndSubmit(type.id)}
                 style={{
                   ...styles.optionCard,
-                  borderColor: isSelected
-                    ? 'rgba(168, 85, 247, 0.6)'
-                    : 'rgba(255, 255, 255, 0.08)',
-                  backgroundColor: isSelected
-                    ? 'rgba(139, 92, 246, 0.16)'
-                    : 'rgba(15, 23, 42, 0.6)'
+                  borderColor: isSelected ? '#ca0013' : 'rgba(183, 198, 194, 0.35)',
+                  backgroundColor: isSelected ? 'rgba(202, 0, 19, 0.04)' : '#ffffff'
                 }}
               >
                 <div
                   style={{
                     ...styles.iconWrapper,
-                    backgroundColor: isSelected
-                      ? '#8b5cf6'
-                      : 'rgba(255, 255, 255, 0.06)',
-                    color: isSelected ? '#ffffff' : '#a855f7'
+                    backgroundColor: isSelected ? '#ca0013' : 'rgba(23, 30, 25, 0.05)',
+                    color: isSelected ? '#ffffff' : '#171e19'
                   }}
                 >
                   <IconComp size={18} />
@@ -105,11 +101,15 @@ export function AssessmentPickerModal({
                   <p style={styles.optionDesc}>{type.shortDesc}</p>
                 </div>
 
-                <ChevronRight
-                  size={18}
-                  color={isSelected ? '#c084fc' : '#475569'}
-                  style={{ flexShrink: 0 }}
-                />
+                <div
+                  style={{
+                    ...styles.chevronCircle,
+                    backgroundColor: isSelected ? '#ca0013' : 'rgba(238, 235, 227, 0.8)',
+                    color: isSelected ? '#ffffff' : '#576561'
+                  }}
+                >
+                  <ChevronRight size={16} />
+                </div>
               </button>
             );
           })}
@@ -126,34 +126,34 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(3, 7, 18, 0.82)',
+    backgroundColor: 'rgba(23, 30, 25, 0.65)',
     backdropFilter: 'blur(8px)',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'flex-end',
-    zIndex: 80
+    zIndex: 90
   },
   sheet: {
-    backgroundColor: '#0c1322',
-    borderTopLeftRadius: '24px',
-    borderTopRightRadius: '24px',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: '40px',
+    borderTopRightRadius: '40px',
+    border: '1px solid rgba(183, 198, 194, 0.35)',
     borderBottom: 'none',
-    maxHeight: '84vh',
+    maxHeight: '86vh',
     display: 'flex',
     flexDirection: 'column',
-    boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.6)',
+    boxShadow: '0 -20px 50px rgba(23, 30, 25, 0.25)',
     animation: 'slideUp 0.25s ease-out'
   },
   dragHandle: {
-    width: '36px',
+    width: '40px',
     height: '4px',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(183, 198, 194, 0.6)',
     borderRadius: '2px',
-    margin: '10px auto 4px auto'
+    margin: '12px auto 4px auto'
   },
   header: {
-    padding: '12px 18px 8px 18px',
+    padding: '14px 20px 8px 20px',
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'space-between'
@@ -163,70 +163,84 @@ const styles = {
     alignItems: 'center',
     gap: '8px'
   },
+  sparkleCircle: {
+    width: '28px',
+    height: '28px',
+    borderRadius: '50%',
+    backgroundColor: '#ca0013',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
   title: {
-    fontSize: '16px',
-    fontWeight: '700',
-    color: '#f8fafc'
+    fontSize: '20px',
+    fontWeight: '900',
+    color: '#171e19',
+    letterSpacing: '-0.3px'
   },
   subtitle: {
-    fontSize: '11.5px',
-    color: '#94a3b8',
+    fontSize: '12.5px',
+    fontWeight: '600',
+    color: '#7b8a86',
     marginTop: '2px'
   },
   closeBtn: {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    padding: '4px',
-    color: '#94a3b8'
+    padding: '4px'
   },
   previewBox: {
-    margin: '6px 16px 10px 16px',
-    padding: '8px 12px',
-    backgroundColor: 'rgba(14, 22, 40, 0.8)',
-    borderRadius: '10px',
-    border: '1px solid rgba(255, 255, 255, 0.06)'
+    margin: '8px 20px 10px 20px',
+    padding: '10px 14px',
+    backgroundColor: 'rgba(238, 235, 227, 0.6)',
+    borderRadius: '16px',
+    border: '1px solid rgba(183, 198, 194, 0.25)'
   },
   previewLabel: {
-    fontSize: '9.5px',
-    fontWeight: '700',
-    color: '#60a5fa',
-    letterSpacing: '0.4px'
+    fontSize: '10px',
+    fontWeight: '800',
+    color: '#7b8a86',
+    letterSpacing: '0.8px',
+    textTransform: 'uppercase'
   },
   previewText: {
-    fontSize: '12.5px',
-    color: '#cbd5e1',
-    lineHeight: '1.4',
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#171e19',
+    lineHeight: '1.45',
     fontStyle: 'italic',
     marginTop: '2px'
   },
   optionsList: {
-    padding: '4px 16px 24px 16px',
+    padding: '6px 20px 28px 20px',
     overflowY: 'auto',
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px'
+    gap: '10px'
   },
   optionCard: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    padding: '11px 14px',
-    borderRadius: '14px',
+    padding: '12px 16px',
+    borderRadius: '24px',
     border: '1px solid',
     textAlign: 'left',
     cursor: 'pointer',
     transition: 'all 0.15s ease',
-    width: '100%'
+    width: '100%',
+    boxShadow: '0 4px 12px rgba(23, 30, 25, 0.03)'
   },
   iconWrapper: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '10px',
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0
+    flexShrink: 0,
+    transition: 'all 0.15s ease'
   },
   optionContent: {
     flex: 1,
@@ -239,24 +253,33 @@ const styles = {
     gap: '6px'
   },
   optionTitle: {
-    fontSize: '13.5px',
-    fontWeight: '700',
-    color: '#f8fafc'
+    fontSize: '14.5px',
+    fontWeight: '800',
+    color: '#171e19'
   },
   optionTag: {
     fontSize: '10px',
-    fontWeight: '600',
-    color: '#c084fc',
-    backgroundColor: 'rgba(139, 92, 246, 0.15)',
-    padding: '2px 6px',
-    borderRadius: '6px',
+    fontWeight: '800',
+    color: '#ca0013',
+    backgroundColor: 'rgba(202, 0, 19, 0.08)',
+    padding: '2px 8px',
+    borderRadius: '10px',
     whiteSpace: 'nowrap'
   },
   optionDesc: {
-    fontSize: '11px',
-    color: '#94a3b8',
+    fontSize: '11.5px',
+    color: '#576561',
+    fontWeight: '600',
     marginTop: '2px',
     lineHeight: '1.3'
+  },
+  chevronCircle: {
+    width: '28px',
+    height: '28px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0
   }
 };
-

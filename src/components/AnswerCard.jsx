@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { Copy, Check, RotateCw, Sparkles, Clock, AlertTriangle, FileText } from 'lucide-react';
+import {
+  Copy,
+  Check,
+  RotateCw,
+  Sparkles,
+  Clock,
+  AlertTriangle,
+  FileText,
+  CheckCircle,
+  HelpCircle,
+  Gauge,
+  BookOpen,
+  Volume2
+} from 'lucide-react';
 import { countWords, estimateSpeechDuration } from '../utils/transcriptHelpers';
 
 export function AnswerCard({
@@ -26,26 +39,114 @@ export function AnswerCard({
   const isLoading = status === 'loading';
   const isError = status === 'error';
 
-  return (
-    <div style={styles.cardContainer}>
-      {/* Top action bar */}
-      <div style={styles.cardHeader}>
-        <div style={styles.headerTitleGroup}>
-          <Sparkles size={16} color="#c084fc" />
-          <span style={styles.headerTitle}>Suggested Response</span>
-        </div>
+  // Emoji map for the 64x64px icon holder
+  const EMOJI_MAP = {
+    'Scenario-Based Reply': '💬',
+    'Situation-Based Answer': '🧠',
+    'Read Aloud': '📖',
+    'Repeat What You Hear': '🔊',
+    'Correct the Wrong Sentence': '✅',
+    'Fill in the Blanks': '✨',
+    '45-Second Speech': '⏱️'
+  };
 
-        <div style={styles.actionButtons}>
-          {answer && (
-            <button
-              onClick={handleCopy}
+  const currentEmoji = EMOJI_MAP[selectedType] || '🎯';
+
+  // Format the output according to the assessment type
+  const renderFormattedAssessmentOutput = () => {
+    if (!answer) return null;
+
+    // 1. Correct the Wrong Sentence format
+    if (selectedType === 'Correct the Wrong Sentence') {
+      const parts = answer.split(/(?:Corrected Sentence:|Explanation:)/i).filter(Boolean);
+      const corrected = parts[0]?.trim() || answer;
+      const explanation = parts[1]?.trim() || '';
+
+      return (
+        <div style={styles.assessmentSection}>
+          <div style={styles.bentoOutputCard}>
+            <span style={styles.bentoCardLabel}>CORRECTED SENTENCE</span>
+            <p style={styles.highlightedOutputText}>{corrected}</p>
+          </div>
+
+          {explanation && (
+            <div style={{ ...styles.bentoOutputCard, backgroundColor: 'rgba(238, 235, 227, 0.6)' }}>
+              <span style={styles.bentoCardLabel}>GRAMMATICAL EXPLANATION</span>
+              <p style={styles.explanationText}>{explanation}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // 2. Fill in the Blanks format
+    if (selectedType === 'Fill in the Blanks') {
+      return (
+        <div style={styles.assessmentSection}>
+          <div style={styles.bentoOutputCard}>
+            <span style={styles.bentoCardLabel}>COMPLETED SENTENCE & GRAMMAR RULE</span>
+            <div style={styles.standardAnswerText}>{answer}</div>
+          </div>
+        </div>
+      );
+    }
+
+    // 3. 45-Second Speech format
+    if (selectedType === '45-Second Speech') {
+      const isTargetMet = wordCount >= 85 && wordCount <= 125;
+      return (
+        <div style={styles.assessmentSection}>
+          <div style={styles.speechPaceBanner}>
+            <span style={styles.speechPaceTitle}>SPEECH TARGET MONITOR</span>
+            <span
               style={{
-                ...styles.btnAction,
-                color: copied ? '#34d399' : '#cbd5e1'
+                ...styles.speechPaceBadge,
+                backgroundColor: isTargetMet ? 'rgba(23, 30, 25, 0.1)' : 'rgba(202, 0, 19, 0.1)',
+                color: isTargetMet ? '#171e19' : '#ca0013'
               }}
-              title="Copy response to clipboard"
             >
-              {copied ? <Check size={14} color="#34d399" /> : <Copy size={14} />}
+              {wordCount} / 90-120 Words ({isTargetMet ? 'Perfect Pace' : 'Adjust Delivery'})
+            </span>
+          </div>
+
+          <div style={styles.standardAnswerText}>{answer}</div>
+        </div>
+      );
+    }
+
+    // 4. Repeat What You Hear
+    if (selectedType === 'Repeat What You Hear') {
+      return (
+        <div style={styles.assessmentSection}>
+          <div style={styles.repeatQuoteCard}>
+            <span style={styles.bentoCardLabel}>VERBATIM RECALL SCRIPT</span>
+            <p style={styles.verbatimText}>"{answer}"</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Default for Scenario-Based Reply, Situation-Based Answer, Read Aloud
+    return (
+      <div style={styles.standardAnswerContainer}>
+        <div style={styles.standardAnswerText}>{answer}</div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="hero-card">
+      {/* 1. Semi-transparent decorative blob (#b7c6c2/20) in the top-right */}
+      <div className="decorative-blob" />
+
+      {/* Top Header Row with 64x64px white icon holder and Actions */}
+      <div className="hero-top-row">
+        <div className="icon-holder-64">{currentEmoji}</div>
+
+        <div style={styles.actionButtonGroup}>
+          {answer && (
+            <button onClick={handleCopy} className="btn-secondary-white" title="Copy answer">
+              {copied ? <Check size={14} color="#ca0013" /> : <Copy size={14} />}
               <span>{copied ? 'Copied' : 'Copy'}</span>
             </button>
           )}
@@ -54,12 +155,9 @@ export function AnswerCard({
             <button
               onClick={onRegenerate}
               disabled={isLoading}
-              style={{
-                ...styles.btnAction,
-                opacity: isLoading ? 0.6 : 1,
-                cursor: isLoading ? 'not-allowed' : 'pointer'
-              }}
-              title="Regenerate answer for this question"
+              className="btn-primary-red"
+              style={{ padding: '8px 16px', fontSize: '13px' }}
+              title="Regenerate answer"
             >
               <RotateCw size={14} className={isLoading ? 'spin-icon' : ''} />
               <span>Regenerate</span>
@@ -68,193 +166,259 @@ export function AnswerCard({
         </div>
       </div>
 
-      {/* Answer Body / States */}
-      <div style={styles.cardBody}>
+      {/* Title & Subheading */}
+      <div style={styles.heroTitleGroup}>
+        <span style={styles.heroCategoryLabel}>SELECTED ASSESSMENT</span>
+        <h2 style={styles.heroHeading}>{selectedType}</h2>
+      </div>
+
+      {/* 3. Nested 2-column Grid for Bento Metrics */}
+      <div className="bento-metric-grid">
+        {/* Bento Metric 1 */}
+        <div className="bento-metric-card">
+          <div className="bento-icon-circle">
+            <Gauge size={16} />
+          </div>
+          <div className="bento-text-group">
+            <span className="bento-title">TARGET PACE</span>
+            <span className="bento-value">
+              {selectedType === '45-Second Speech' ? '90-120 Words' : '135 WPM'}
+            </span>
+          </div>
+        </div>
+
+        {/* Bento Metric 2 */}
+        <div className="bento-metric-card">
+          <div className="bento-icon-circle">
+            <Clock size={16} />
+          </div>
+          <div className="bento-text-group">
+            <span className="bento-title">EST. DURATION</span>
+            <span className="bento-value">
+              {answer ? `~${estSeconds}s (${wordCount}w)` : 'Ready'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div style={styles.bodyArea}>
         {isLoading && (
-          <div style={styles.loadingState}>
+          <div style={styles.loadingContainer}>
             <div style={styles.spinner} />
-            <div style={styles.loadingTextGroup}>
-              <span style={styles.loadingTitle}>Bedrock is crafting your answer...</span>
+            <div style={styles.loadingText}>
+              <span style={styles.loadingBold}>Generating Assessment Response...</span>
               <span style={styles.loadingSub}>
-                Applying {selectedType} scoring criteria using openai.gpt-6.1-terra
+                Applying {selectedType} criteria via Bedrock
               </span>
             </div>
           </div>
         )}
 
         {isError && (
-          <div style={styles.errorBox}>
+          <div style={styles.errorContainer}>
             <div style={styles.errorHeader}>
-              <AlertTriangle size={16} color="#ef4444" />
-              <span style={styles.errorTitle}>Generation Error</span>
+              <AlertTriangle size={18} color="#ca0013" />
+              <span style={styles.errorTitle}>Generation Interrupted</span>
             </div>
-            <p style={styles.errorText}>{error}</p>
-            <div style={styles.errorActionRow}>
-              <button onClick={onRegenerate} style={styles.retryBtn}>
-                <RotateCw size={13} style={{ marginRight: '5px' }} />
-                Retry Request
-              </button>
-            </div>
+            <p style={styles.errorMsg}>{error}</p>
+            <button onClick={onRegenerate} className="btn-primary-red" style={{ alignSelf: 'flex-start', marginTop: '6px' }}>
+              <RotateCw size={14} /> Retry
+            </button>
           </div>
         )}
 
-        {!isLoading && answer && (
-          <div style={styles.answerTextContainer}>
-            <p style={styles.answerText}>{answer}</p>
-          </div>
-        )}
+        {!isLoading && answer && renderFormattedAssessmentOutput()}
 
         {!isLoading && !answer && !isError && (
-          <div style={styles.emptyState}>
-            <FileText size={32} color="#334155" />
+          <div style={styles.emptyContainer}>
+            <FileText size={36} color="#b7c6c2" />
             <p style={styles.emptyTitle}>Ready for assessment question</p>
             <p style={styles.emptySub}>
-              Capture your laptop's audio on the AI Transcribe tab and tap <strong>Send to AI</strong>.
+              Switch to <strong>AI Transcribe</strong> to capture laptop speech, or tap the red Center Action button.
             </p>
             {hasSnapshot && (
-              <button onClick={onGetAnswer} style={styles.getAnswerBtn}>
-                <Sparkles size={14} style={{ marginRight: '6px' }} />
-                Get Answer for Current Snapshot
+              <button onClick={onGetAnswer} className="btn-primary-red" style={{ marginTop: '8px' }}>
+                <Sparkles size={16} /> Get Answer for Snapshot
               </button>
             )}
           </div>
         )}
       </div>
 
-      {/* Footer Metrics (Word count & Spoken duration for 45s Speech) */}
-      {answer && !isLoading && (
-        <div style={styles.cardFooter}>
-          <div style={styles.metricItem}>
-            <span style={styles.metricLabel}>WORDS</span>
-            <span
-              style={{
-                ...styles.metricValue,
-                color:
-                  selectedType === '45-Second Speech'
-                    ? wordCount >= 85 && wordCount <= 125
-                      ? '#34d399'
-                      : '#fbbf24'
-                    : '#f1f5f9'
-              }}
-            >
-              {wordCount}
-              {selectedType === '45-Second Speech' && (
-                <span style={styles.targetPill}> (Goal: 90-120)</span>
-              )}
-            </span>
-          </div>
-
-          <div style={styles.metricItem}>
-            <Clock size={12} color="#94a3b8" />
-            <span style={styles.metricLabel}>EST. SPEAKING TIME</span>
-            <span style={styles.metricValue}>~{estSeconds}s</span>
-          </div>
-        </div>
-      )}
+      {/* 4. Alert / Info box at bottom using #b7c6c2/20 background */}
+      <div className="hero-alert-box">
+        <HelpCircle size={18} color="#576561" style={{ flexShrink: 0 }} />
+        <span className="hero-alert-text">
+          {selectedType === '45-Second Speech' &&
+            'Practice speaking naturally with a crisp opening, 2-3 points, and a concluding sentence.'}
+          {selectedType === 'Read Aloud' &&
+            'Deliver this text with clear articulation and natural pauses at commas and periods.'}
+          {selectedType === 'Repeat What You Hear' &&
+            'Repeat the sentence verbatim with the exact words and sentence cadence.'}
+          {selectedType === 'Correct the Wrong Sentence' &&
+            'Speak the corrected sentence clearly, then provide the concise grammatical rule.'}
+          {selectedType === 'Fill in the Blanks' &&
+            'Insert the missing term smoothly into the sentence structure.'}
+          {selectedType === 'Scenario-Based Reply' &&
+            'Emphasize active collaboration, accountability, and practical problem solving.'}
+          {selectedType === 'Situation-Based Answer' &&
+            'Provide a logical, structured response directly answering the core scenario.'}
+        </span>
+      </div>
     </div>
   );
 }
 
 const styles = {
-  cardContainer: {
-    backgroundColor: '#0f172a',
-    borderRadius: '16px',
-    border: '1px solid rgba(255, 255, 255, 0.09)',
-    overflow: 'hidden',
+  actionButtonGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    position: 'relative',
+    zIndex: 3
+  },
+  heroTitleGroup: {
     display: 'flex',
     flexDirection: 'column',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)'
+    gap: '2px',
+    position: 'relative',
+    zIndex: 2
   },
-  cardHeader: {
-    padding: '12px 16px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-    backgroundColor: 'rgba(23, 34, 57, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between'
+  heroCategoryLabel: {
+    fontSize: '10px',
+    fontWeight: '800',
+    color: '#7b8a86',
+    textTransform: 'uppercase',
+    letterSpacing: '1px'
   },
-  headerTitleGroup: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
+  heroHeading: {
+    fontSize: '24px',
+    fontWeight: '900',
+    color: '#171e19',
+    letterSpacing: '-0.4px',
+    lineHeight: '1.2'
   },
-  headerTitle: {
-    fontSize: '13px',
-    fontWeight: '700',
-    color: '#e2e8f0',
-    letterSpacing: '-0.1px'
-  },
-  actionButtons: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
-  },
-  btnAction: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '5px',
-    padding: '5px 10px',
-    borderRadius: '8px',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    color: '#cbd5e1',
-    fontSize: '11.5px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.15s ease'
-  },
-  cardBody: {
-    padding: '16px',
-    minHeight: '140px',
+  bodyArea: {
+    minHeight: '130px',
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    position: 'relative',
+    zIndex: 2
   },
-  answerTextContainer: {
-    whiteSpace: 'pre-wrap'
+  standardAnswerContainer: {
+    padding: '4px 0'
   },
-  answerText: {
+  standardAnswerText: {
     fontSize: '15px',
+    fontWeight: '600',
     lineHeight: '1.65',
-    color: '#f8fafc',
-    userSelect: 'text',
-    letterSpacing: '0.1px'
+    color: '#171e19',
+    whiteSpace: 'pre-wrap',
+    userSelect: 'text'
   },
-  loadingState: {
+  assessmentSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px'
+  },
+  bentoOutputCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    border: '1px solid rgba(183, 198, 194, 0.35)',
+    borderRadius: '16px',
+    padding: '12px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px'
+  },
+  bentoCardLabel: {
+    fontSize: '9.5px',
+    fontWeight: '800',
+    color: '#ca0013',
+    letterSpacing: '0.8px',
+    textTransform: 'uppercase'
+  },
+  highlightedOutputText: {
+    fontSize: '16px',
+    fontWeight: '800',
+    color: '#171e19',
+    lineHeight: '1.4'
+  },
+  explanationText: {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#576561',
+    lineHeight: '1.5'
+  },
+  speechPaceBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '8px 12px',
+    backgroundColor: 'rgba(238, 235, 227, 0.6)',
+    borderRadius: '12px',
+    marginBottom: '8px'
+  },
+  speechPaceTitle: {
+    fontSize: '10px',
+    fontWeight: '800',
+    color: '#576561',
+    letterSpacing: '0.5px'
+  },
+  speechPaceBadge: {
+    fontSize: '11px',
+    fontWeight: '800',
+    padding: '2px 8px',
+    borderRadius: '8px'
+  },
+  repeatQuoteCard: {
+    backgroundColor: 'rgba(23, 30, 25, 0.04)',
+    borderLeft: '4px solid #ca0013',
+    borderRadius: '12px',
+    padding: '12px 14px'
+  },
+  verbatimText: {
+    fontSize: '17px',
+    fontWeight: '800',
+    color: '#171e19',
+    lineHeight: '1.5'
+  },
+  loadingContainer: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     padding: '24px 12px',
-    gap: '14px',
+    gap: '12px',
     textAlign: 'center'
   },
   spinner: {
-    width: '32px',
-    height: '32px',
+    width: '36px',
+    height: '36px',
     borderRadius: '50%',
-    border: '3px solid rgba(139, 92, 246, 0.2)',
-    borderTopColor: '#c084fc',
-    animation: 'spin 0.8s linear infinite'
+    border: '3px solid rgba(202, 0, 19, 0.15)',
+    borderTopColor: '#ca0013',
+    animation: 'spin 0.75s linear infinite'
   },
-  loadingTextGroup: {
+  loadingText: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px'
+    gap: '2px'
   },
-  loadingTitle: {
+  loadingBold: {
     fontSize: '14px',
-    fontWeight: '600',
-    color: '#f1f5f9'
+    fontWeight: '800',
+    color: '#171e19'
   },
   loadingSub: {
     fontSize: '12px',
-    color: '#94a3b8'
+    color: '#7b8a86'
   },
-  errorBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    border: '1px solid rgba(239, 68, 68, 0.3)',
-    borderRadius: '12px',
+  errorContainer: {
+    backgroundColor: 'rgba(202, 0, 19, 0.08)',
+    border: '1px solid rgba(202, 0, 19, 0.25)',
+    borderRadius: '16px',
     padding: '14px',
     display: 'flex',
     flexDirection: 'column',
@@ -266,33 +430,16 @@ const styles = {
     gap: '6px'
   },
   errorTitle: {
-    fontSize: '13px',
-    fontWeight: '700',
-    color: '#f87171'
+    fontSize: '13.5px',
+    fontWeight: '800',
+    color: '#ca0013'
   },
-  errorText: {
+  errorMsg: {
     fontSize: '12.5px',
-    lineHeight: '1.5',
-    color: '#fca5a5'
+    color: '#171e19',
+    lineHeight: '1.4'
   },
-  errorActionRow: {
-    marginTop: '6px',
-    display: 'flex',
-    justifyContent: 'flex-start'
-  },
-  retryBtn: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '6px 12px',
-    borderRadius: '8px',
-    border: 'none',
-    backgroundColor: '#ef4444',
-    color: '#ffffff',
-    fontSize: '12px',
-    fontWeight: '600',
-    cursor: 'pointer'
-  },
-  emptyState: {
+  emptyContainer: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -302,58 +449,14 @@ const styles = {
     gap: '8px'
   },
   emptyTitle: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#94a3b8'
+    fontSize: '15px',
+    fontWeight: '800',
+    color: '#576561'
   },
   emptySub: {
-    fontSize: '12px',
-    color: '#64748b',
+    fontSize: '12.5px',
+    color: '#7b8a86',
     maxWidth: '280px',
     lineHeight: '1.4'
-  },
-  getAnswerBtn: {
-    marginTop: '10px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '8px 16px',
-    borderRadius: '10px',
-    border: 'none',
-    backgroundColor: '#8b5cf6',
-    color: '#ffffff',
-    fontSize: '12.5px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
-  },
-  cardFooter: {
-    padding: '10px 16px',
-    backgroundColor: 'rgba(10, 16, 28, 0.7)',
-    borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  },
-  metricItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px'
-  },
-  metricLabel: {
-    fontSize: '10px',
-    fontWeight: '700',
-    color: '#64748b',
-    letterSpacing: '0.4px'
-  },
-  metricValue: {
-    fontSize: '12px',
-    fontWeight: '700',
-    color: '#f8fafc'
-  },
-  targetPill: {
-    fontSize: '10.5px',
-    fontWeight: '500',
-    color: '#a78bfa'
   }
 };
-

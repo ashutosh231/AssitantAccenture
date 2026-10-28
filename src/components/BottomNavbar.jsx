@@ -1,70 +1,50 @@
 import React from 'react';
-import { Mic, Sparkles } from 'lucide-react';
+import { Mic, Sparkles, Send } from 'lucide-react';
 
-export function BottomNavbar({ activeTab, onTabChange, isListening, hasAnswer }) {
+export function BottomNavbar({
+  activeTab,
+  onTabChange,
+  isListening,
+  hasContent,
+  onCenterAction
+}) {
   return (
-    <nav className="bottom-navbar" role="navigation" aria-label="Main Navigation">
-      {/* Tab 1: AI Transcribe */}
-      <button
-        onClick={() => onTabChange('transcribe')}
-        className={`nav-tab-btn transcribe-tab ${activeTab === 'transcribe' ? 'active' : ''}`}
-        aria-selected={activeTab === 'transcribe'}
-        role="tab"
-      >
-        {activeTab === 'transcribe' && <div className="nav-tab-indicator blue" />}
-        <div style={styles.iconWrapper}>
-          <Mic size={20} />
-          {isListening && <div style={styles.tabLiveDot} />}
-        </div>
-        <span className="nav-tab-label">AI Transcribe</span>
-      </button>
+    <div className="floating-navbar-wrapper">
+      <nav className="floating-nav-pill" role="navigation" aria-label="Main Navigation">
+        {/* Left Tab: AI Transcribe (48px touch target) */}
+        <button
+          onClick={() => onTabChange('transcribe')}
+          className={`nav-tab-touch ${activeTab === 'transcribe' ? 'active' : ''}`}
+          aria-selected={activeTab === 'transcribe'}
+          role="tab"
+          title="AI Transcribe Screen"
+        >
+          <Mic size={20} color={activeTab === 'transcribe' ? '#ffffff' : '#b7c6c2'} />
+          <span className="nav-tab-text">Transcribe</span>
+        </button>
 
-      {/* Tab 2: AI Text Answer */}
-      <button
-        onClick={() => onTabChange('answer')}
-        className={`nav-tab-btn answer-tab ${activeTab === 'answer' ? 'active' : ''}`}
-        aria-selected={activeTab === 'answer'}
-        role="tab"
-      >
-        {activeTab === 'answer' && <div className="nav-tab-indicator purple" />}
-        <div style={styles.iconWrapper}>
-          <Sparkles size={20} />
-          {hasAnswer && <div style={styles.tabAnswerDot} />}
-        </div>
-        <span className="nav-tab-label">AI Text Answer</span>
-      </button>
-    </nav>
+        {/* Center Floating Action Button (FAB): 56px red circle offset vertically by -32px, 4px #eeebe3 border */}
+        <button
+          onClick={onCenterAction}
+          className="floating-center-fab"
+          title="Send Captured Speech to AI"
+          aria-label="Send to AI"
+        >
+          <Sparkles size={24} color="#ffffff" />
+        </button>
+
+        {/* Right Tab: AI Text Answer (48px touch target) */}
+        <button
+          onClick={() => onTabChange('answer')}
+          className={`nav-tab-touch ${activeTab === 'answer' ? 'active' : ''}`}
+          aria-selected={activeTab === 'answer'}
+          role="tab"
+          title="AI Text Answer Screen"
+        >
+          <Send size={20} color={activeTab === 'answer' ? '#ffffff' : '#b7c6c2'} />
+          <span className="nav-tab-text">Answer</span>
+        </button>
+      </nav>
+    </div>
   );
 }
-
-const styles = {
-  iconWrapper: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '24px',
-    height: '24px'
-  },
-  tabLiveDot: {
-    position: 'absolute',
-    top: -2,
-    right: -4,
-    width: '7px',
-    height: '7px',
-    borderRadius: '50%',
-    backgroundColor: '#10b981',
-    boxShadow: '0 0 6px #10b981'
-  },
-  tabAnswerDot: {
-    position: 'absolute',
-    top: -2,
-    right: -4,
-    width: '7px',
-    height: '7px',
-    borderRadius: '50%',
-    backgroundColor: '#a855f7',
-    boxShadow: '0 0 6px #a855f7'
-  }
-};
-

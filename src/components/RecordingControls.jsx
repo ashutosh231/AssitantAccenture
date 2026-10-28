@@ -47,11 +47,11 @@ export function RecordingControls({
           onClick={onTogglePlayPause}
           style={{
             ...styles.controlBtn,
-            ...styles.playPauseBtn,
-            backgroundColor: isListening ? '#f59e0b' : '#3b82f6',
+            backgroundColor: isListening ? '#171e19' : '#ca0013',
+            color: '#ffffff',
             boxShadow: isListening
-              ? '0 4px 14px rgba(245, 158, 11, 0.3)'
-              : '0 4px 14px rgba(59, 130, 246, 0.3)'
+              ? '0 6px 16px rgba(23, 30, 25, 0.2)'
+              : '0 6px 16px rgba(202, 0, 19, 0.3)'
           }}
           title={isListening ? 'Pause listening' : isPaused ? 'Resume listening' : 'Start listening'}
         >
@@ -67,7 +67,7 @@ export function RecordingControls({
           </span>
         </button>
 
-        {/* 2. Send to AI (Prominent Purple Control) */}
+        {/* 2. Send to AI (Vibrant Red High-Impact CTA) */}
         <button
           onClick={onSendToAI}
           style={{
@@ -83,7 +83,7 @@ export function RecordingControls({
             <Sparkles size={18} color="#ffffff" />
             <span style={styles.sendAiLabel}>Send to AI</span>
           </div>
-          <span style={styles.sendAiSub}>Generate Answer</span>
+          <span style={styles.sendAiSub}>Choose Category</span>
         </button>
 
         {/* 3. New Transcript Control */}
@@ -93,10 +93,10 @@ export function RecordingControls({
             ...styles.controlBtn,
             ...styles.secondaryBtn
           }}
-          title="Start a fresh transcription session"
+          title="Start fresh transcription session"
         >
-          <PlusCircle size={18} color="#94a3b8" />
-          <span style={styles.controlLabel}>New</span>
+          <PlusCircle size={18} color="#576561" />
+          <span style={styles.secondaryLabel}>New</span>
         </button>
 
         {/* 4. Clear Control */}
@@ -108,12 +108,12 @@ export function RecordingControls({
           }}
           title="Clear current transcript display"
         >
-          <Trash2 size={18} color="#94a3b8" />
-          <span style={styles.controlLabel}>Clear</span>
+          <Trash2 size={18} color="#576561" />
+          <span style={styles.secondaryLabel}>Clear</span>
         </button>
       </div>
 
-      {/* Confirmation Dialog Modal */}
+      {/* Confirmation Dialog Modal with 40px radius */}
       {confirmModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
@@ -122,8 +122,8 @@ export function RecordingControls({
             </h3>
             <p style={styles.modalMessage}>
               {confirmModal === 'new'
-                ? 'Starting a fresh session will reset the current transcript and duration timer. Are you sure you want to proceed?'
-                : 'This will clear the current live transcript view. Any previously submitted answer snapshot will be preserved.'}
+                ? 'Starting a fresh session will reset the current transcript and session timer.'
+                : 'This will clear the displayed transcript. Any previously generated answer will remain saved.'}
             </p>
             <div style={styles.modalActions}>
               <button
@@ -136,7 +136,7 @@ export function RecordingControls({
                 onClick={confirmAction}
                 style={{
                   ...styles.modalConfirmBtn,
-                  backgroundColor: confirmModal === 'new' ? '#3b82f6' : '#ef4444'
+                  backgroundColor: '#ca0013'
                 }}
               >
                 {confirmModal === 'new' ? 'Start Fresh' : 'Clear Now'}
@@ -152,17 +152,19 @@ export function RecordingControls({
 const styles = {
   container: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1.6fr 0.9fr 0.9fr',
+    gridTemplateColumns: '1.1fr 1.6fr 0.9fr 0.9fr',
     gap: '8px',
-    padding: '12px 14px',
-    backgroundColor: '#0c1322',
-    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+    padding: '10px 14px',
+    backgroundColor: '#ffffff',
+    borderRadius: '28px',
+    border: '1px solid rgba(183, 198, 194, 0.3)',
+    boxShadow: '0 8px 24px rgba(23, 30, 25, 0.05)',
     alignItems: 'center'
   },
   controlBtn: {
     border: 'none',
-    borderRadius: '12px',
-    padding: '10px 6px',
+    borderRadius: '18px',
+    padding: '8px 4px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -172,12 +174,9 @@ const styles = {
     transition: 'all 0.15s ease',
     minHeight: '52px'
   },
-  playPauseBtn: {
-    color: '#ffffff'
-  },
   sendAiBtn: {
-    backgroundColor: '#8b5cf6',
-    boxShadow: '0 4px 16px rgba(139, 92, 246, 0.35)',
+    backgroundColor: '#ca0013',
+    boxShadow: '0 8px 20px rgba(202, 0, 19, 0.3)',
     color: '#ffffff'
   },
   sendAiContent: {
@@ -187,23 +186,28 @@ const styles = {
   },
   sendAiLabel: {
     fontSize: '13px',
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#ffffff'
   },
   sendAiSub: {
     fontSize: '9.5px',
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '500'
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '700'
   },
   secondaryBtn: {
-    backgroundColor: '#172238',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    color: '#94a3b8'
+    backgroundColor: 'rgba(238, 235, 227, 0.5)',
+    border: '1px solid rgba(183, 198, 194, 0.3)',
+    color: '#576561'
   },
   controlLabel: {
     fontSize: '11px',
-    fontWeight: '600',
+    fontWeight: '800',
     letterSpacing: '0.2px'
+  },
+  secondaryLabel: {
+    fontSize: '11px',
+    fontWeight: '800',
+    color: '#576561'
   },
   modalOverlay: {
     position: 'absolute',
@@ -211,8 +215,8 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(3, 6, 12, 0.75)',
-    backdropFilter: 'blur(4px)',
+    backgroundColor: 'rgba(23, 30, 25, 0.65)',
+    backdropFilter: 'blur(6px)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -220,26 +224,27 @@ const styles = {
     zIndex: 100
   },
   modalContent: {
-    backgroundColor: '#111a2d',
-    borderRadius: '16px',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
-    padding: '20px',
+    backgroundColor: '#ffffff',
+    borderRadius: '32px',
+    border: '1px solid rgba(183, 198, 194, 0.3)',
+    padding: '24px 20px',
     width: '100%',
     maxWidth: '340px',
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
-    boxShadow: '0 12px 30px rgba(0, 0, 0, 0.5)'
+    boxShadow: '0 20px 50px rgba(23, 30, 25, 0.25)'
   },
   modalTitle: {
-    fontSize: '16px',
-    fontWeight: '700',
-    color: '#f8fafc'
+    fontSize: '18px',
+    fontWeight: '900',
+    color: '#171e19'
   },
   modalMessage: {
     fontSize: '13.5px',
     lineHeight: '1.5',
-    color: '#94a3b8'
+    color: '#576561',
+    fontWeight: '600'
   },
   modalActions: {
     display: 'flex',
@@ -248,23 +253,23 @@ const styles = {
     marginTop: '6px'
   },
   modalCancelBtn: {
-    padding: '8px 14px',
-    backgroundColor: 'transparent',
-    border: '1px solid rgba(255, 255, 255, 0.15)',
-    borderRadius: '8px',
-    color: '#cbd5e1',
+    padding: '9px 16px',
+    backgroundColor: '#ffffff',
+    border: '1px solid rgba(183, 198, 194, 0.4)',
+    borderRadius: '9999px',
+    color: '#576561',
     fontSize: '13px',
-    fontWeight: '600',
+    fontWeight: '700',
     cursor: 'pointer'
   },
   modalConfirmBtn: {
-    padding: '8px 16px',
+    padding: '9px 18px',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: '9999px',
     color: '#ffffff',
     fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer'
+    fontWeight: '800',
+    cursor: 'pointer',
+    boxShadow: '0 4px 12px rgba(202, 0, 19, 0.3)'
   }
 };
-

@@ -26,37 +26,48 @@ export function AssessmentTypeSelector({ selectedType, onSelectType }) {
   return (
     <div style={styles.container}>
       <div style={styles.headerRow}>
-        <span style={styles.label}>ASSESSMENT TYPE</span>
-        <span style={styles.activeTag}>{current.tag}</span>
+        <span style={styles.label}>ASSESSMENT CATEGORY</span>
+        <span style={styles.categoryCount}>7 Sections Available</span>
       </div>
 
-      {/* Horizontal scrolling pill row */}
+      {/* Horizontal snap-scrolling list of category buttons */}
       <div style={styles.scrollStrip}>
         {ASSESSMENT_TYPES.map((type) => {
           const isSelected = type.id === selectedType;
           const IconComp = ICON_MAP[type.icon] || Sparkles;
 
+          if (isSelected) {
+            // Active state: 160px+ wide pill in #171e19, internal 40px red circle for icon, white text
+            return (
+              <button
+                key={type.id}
+                onClick={() => onSelectType(type.id)}
+                style={styles.activePill}
+                title={type.title}
+              >
+                <div style={styles.activeRedCircle}>
+                  <IconComp size={18} color="#ffffff" />
+                </div>
+                <div style={styles.activeTextGroup}>
+                  <span style={styles.activeTitle}>{type.title}</span>
+                  <span style={styles.activeSub}>{type.tag}</span>
+                </div>
+              </button>
+            );
+          }
+
+          // Inactive state: 56x56px white square with 16px radius, #b7c6c2/30 border
           return (
             <button
               key={type.id}
               onClick={() => onSelectType(type.id)}
-              style={{
-                ...styles.pillBtn,
-                backgroundColor: isSelected ? '#8b5cf6' : '#141e33',
-                borderColor: isSelected ? '#a855f7' : 'rgba(255, 255, 255, 0.08)',
-                color: isSelected ? '#ffffff' : '#94a3b8'
-              }}
+              style={styles.inactiveSquare}
+              title={type.title}
             >
-              <IconComp size={13} color={isSelected ? '#ffffff' : '#64748b'} />
-              <span>{type.title}</span>
+              <IconComp size={22} color="#576561" />
             </button>
           );
         })}
-      </div>
-
-      {/* Brief instruction tip */}
-      <div style={styles.descBox}>
-        <p style={styles.descText}>{current.shortDesc}</p>
       </div>
     </div>
   );
@@ -67,61 +78,97 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
-    padding: '12px 14px',
-    backgroundColor: '#0c1322',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+    padding: '0 2px'
   },
   headerRow: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    padding: '0 4px'
   },
   label: {
-    fontSize: '10.5px',
-    fontWeight: '700',
-    color: '#64748b',
-    letterSpacing: '0.6px'
+    fontSize: '10px',
+    fontWeight: '800',
+    color: '#7b8a86',
+    letterSpacing: '1px',
+    textTransform: 'uppercase'
   },
-  activeTag: {
+  categoryCount: {
     fontSize: '11px',
-    fontWeight: '600',
-    color: '#c084fc',
-    backgroundColor: 'rgba(139, 92, 246, 0.15)',
-    padding: '2px 8px',
-    borderRadius: '12px'
+    fontWeight: '700',
+    color: '#b7c6c2'
   },
   scrollStrip: {
     display: 'flex',
-    gap: '6px',
+    alignItems: 'center',
+    gap: '10px',
     overflowX: 'auto',
+    scrollSnapType: 'x mandatory',
     paddingBottom: '4px',
     scrollbarWidth: 'none',
     msOverflowStyle: 'none'
   },
-  pillBtn: {
-    display: 'inline-flex',
+  activePill: {
+    minWidth: '168px',
+    height: '56px',
+    borderRadius: '28px',
+    backgroundColor: '#171e19',
+    border: 'none',
+    padding: '0 12px 0 8px',
+    display: 'flex',
     alignItems: 'center',
-    gap: '6px',
-    padding: '6px 12px',
-    borderRadius: '20px',
-    border: '1px solid',
-    fontSize: '12px',
-    fontWeight: '600',
-    whiteSpace: 'nowrap',
+    gap: '10px',
     cursor: 'pointer',
-    transition: 'all 0.15s ease',
+    flexShrink: 0,
+    scrollSnapAlign: 'start',
+    boxShadow: '0 8px 20px rgba(23, 30, 25, 0.2)',
+    transition: 'all 0.2s ease'
+  },
+  activeRedCircle: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    backgroundColor: '#ca0013',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     flexShrink: 0
   },
-  descBox: {
-    padding: '6px 10px',
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    borderRadius: '8px',
-    border: '1px solid rgba(255, 255, 255, 0.05)'
+  activeTextGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    textAlign: 'left',
+    overflow: 'hidden'
   },
-  descText: {
-    fontSize: '11.5px',
-    color: '#cbd5e1',
-    lineHeight: '1.4'
+  activeTitle: {
+    fontSize: '12.5px',
+    fontWeight: '800',
+    color: '#ffffff',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis'
+  },
+  activeSub: {
+    fontSize: '9.5px',
+    fontWeight: '700',
+    color: '#b7c6c2',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis'
+  },
+  inactiveSquare: {
+    width: '56px',
+    height: '56px',
+    borderRadius: '16px',
+    backgroundColor: '#ffffff',
+    border: '1px solid rgba(183, 198, 194, 0.3)',
+    boxShadow: '0 4px 12px rgba(23, 30, 25, 0.04)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    flexShrink: 0,
+    scrollSnapAlign: 'start',
+    transition: 'all 0.15s ease'
   }
 };
-

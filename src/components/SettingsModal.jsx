@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Key, Shield, Globe, Cpu, Check, AlertCircle } from 'lucide-react';
+import { X, Key, Shield, Check } from 'lucide-react';
 
 export function SettingsModal({
   isOpen,
@@ -65,11 +65,16 @@ export function SettingsModal({
         {/* Header */}
         <div style={styles.header}>
           <div style={styles.titleGroup}>
-            <Key size={18} color="#60a5fa" />
-            <h2 style={styles.title}>AWS Configuration</h2>
+            <div style={styles.keyCircle}>
+              <Key size={18} color="#ffffff" />
+            </div>
+            <div>
+              <span style={styles.headerSubtitle}>PREPARATION SETTINGS</span>
+              <h2 style={styles.title}>AWS Configuration</h2>
+            </div>
           </div>
           <button onClick={onClose} style={styles.closeBtn} title="Close settings">
-            <X size={18} color="#94a3b8" />
+            <X size={20} color="#576561" />
           </button>
         </div>
 
@@ -77,10 +82,10 @@ export function SettingsModal({
         <form onSubmit={handleSave} style={styles.body}>
           {/* Status info banner */}
           <div style={styles.statusBox}>
-            <Shield size={16} color="#34d399" />
+            <Shield size={18} color="#ca0013" />
             <div style={styles.statusInfo}>
               <span style={styles.statusTitle}>
-                Active Auth Mode: {credentialsConfig?.source ? credentialsConfig.source.toUpperCase() : 'NOT CONFIGURED'}
+                AUTH MODE: {credentialsConfig?.source ? credentialsConfig.source.toUpperCase() : 'NOT CONFIGURED'}
               </span>
               <span style={styles.statusSub}>
                 {credentialsConfig?.accessKeyId
@@ -147,7 +152,7 @@ export function SettingsModal({
               required
             />
             <span style={styles.hint}>
-              Configured model: <code>openai.gpt-6.1-terra</code>
+              Configured: <code>openai.gpt-6.1-terra</code> or <code>amazon.nova-2-lite-v1:0</code>
             </span>
           </div>
 
@@ -188,10 +193,10 @@ export function SettingsModal({
             <button type="button" onClick={handleReset} style={styles.btnReset}>
               Clear Keys
             </button>
-            <button type="submit" style={styles.btnSave}>
+            <button type="submit" className="btn-primary-red">
               {savedSuccess ? (
                 <>
-                  <Check size={14} style={{ marginRight: '6px' }} /> Saved!
+                  <Check size={16} /> Saved!
                 </>
               ) : (
                 'Save Settings'
@@ -211,42 +216,59 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(3, 7, 18, 0.82)',
+    backgroundColor: 'rgba(23, 30, 25, 0.65)',
     backdropFilter: 'blur(8px)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     padding: '16px',
-    zIndex: 90
+    zIndex: 100
   },
   modal: {
-    backgroundColor: '#0e172a',
-    borderRadius: '20px',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
+    backgroundColor: '#ffffff',
+    borderRadius: '40px',
+    border: '1px solid rgba(183, 198, 194, 0.35)',
     width: '100%',
     maxWidth: '420px',
     maxHeight: '90vh',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
-    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6)'
+    boxShadow: '0 25px 60px rgba(23, 30, 25, 0.25)'
   },
   header: {
-    padding: '16px 20px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+    padding: '18px 24px 12px 24px',
+    borderBottom: '1px solid rgba(183, 198, 194, 0.25)',
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between'
   },
   titleGroup: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px'
+    gap: '12px'
+  },
+  keyCircle: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    backgroundColor: '#171e19',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  headerSubtitle: {
+    fontSize: '9.5px',
+    fontWeight: '800',
+    color: '#7b8a86',
+    letterSpacing: '1px',
+    textTransform: 'uppercase'
   },
   title: {
-    fontSize: '16px',
-    fontWeight: '700',
-    color: '#f8fafc'
+    fontSize: '20px',
+    fontWeight: '900',
+    color: '#171e19',
+    letterSpacing: '-0.3px'
   },
   closeBtn: {
     background: 'none',
@@ -255,17 +277,17 @@ const styles = {
     padding: '4px'
   },
   body: {
-    padding: '18px 20px',
+    padding: '18px 24px',
     overflowY: 'auto',
     display: 'flex',
     flexDirection: 'column',
     gap: '14px'
   },
   statusBox: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    border: '1px solid rgba(16, 185, 129, 0.25)',
-    borderRadius: '10px',
-    padding: '10px 12px',
+    backgroundColor: 'rgba(238, 235, 227, 0.7)',
+    border: '1px solid rgba(183, 198, 194, 0.3)',
+    borderRadius: '16px',
+    padding: '12px 14px',
     display: 'flex',
     alignItems: 'flex-start',
     gap: '10px'
@@ -276,14 +298,15 @@ const styles = {
     gap: '2px'
   },
   statusTitle: {
-    fontSize: '11px',
-    fontWeight: '700',
-    color: '#34d399',
-    letterSpacing: '0.3px'
+    fontSize: '10.5px',
+    fontWeight: '800',
+    color: '#171e19',
+    letterSpacing: '0.6px'
   },
   statusSub: {
-    fontSize: '11px',
-    color: '#94a3b8'
+    fontSize: '11.5px',
+    color: '#576561',
+    fontWeight: '600'
   },
   fieldGroup: {
     display: 'flex',
@@ -296,44 +319,47 @@ const styles = {
   },
   label: {
     fontSize: '11.5px',
-    fontWeight: '600',
-    color: '#cbd5e1'
+    fontWeight: '800',
+    color: '#171e19'
   },
   input: {
-    padding: '9px 12px',
-    backgroundColor: '#172238',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
-    borderRadius: '10px',
-    color: '#f8fafc',
-    fontSize: '13px',
+    padding: '10px 14px',
+    backgroundColor: 'rgba(238, 235, 227, 0.5)',
+    border: '1px solid rgba(183, 198, 194, 0.4)',
+    borderRadius: '14px',
+    color: '#171e19',
+    fontSize: '13.5px',
+    fontWeight: '600',
     outline: 'none',
     width: '100%'
   },
   select: {
-    padding: '9px 12px',
-    backgroundColor: '#172238',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
-    borderRadius: '10px',
-    color: '#f8fafc',
-    fontSize: '13px',
+    padding: '10px 14px',
+    backgroundColor: 'rgba(238, 235, 227, 0.5)',
+    border: '1px solid rgba(183, 198, 194, 0.4)',
+    borderRadius: '14px',
+    color: '#171e19',
+    fontSize: '13.5px',
+    fontWeight: '600',
     outline: 'none',
     width: '100%'
   },
   hint: {
     fontSize: '10.5px',
-    color: '#64748b'
+    color: '#7b8a86',
+    fontWeight: '600'
   },
   sectionDivider: {
-    marginTop: '6px',
+    marginTop: '4px',
     paddingTop: '10px',
-    borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+    borderTop: '1px solid rgba(183, 198, 194, 0.25)'
   },
   sectionTitle: {
     fontSize: '11px',
-    fontWeight: '700',
-    color: '#60a5fa',
+    fontWeight: '800',
+    color: '#ca0013',
     textTransform: 'uppercase',
-    letterSpacing: '0.4px'
+    letterSpacing: '0.8px'
   },
   actionsRow: {
     display: 'flex',
@@ -343,27 +369,13 @@ const styles = {
     gap: '10px'
   },
   btnReset: {
-    padding: '8px 14px',
-    backgroundColor: 'transparent',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
-    borderRadius: '10px',
-    color: '#94a3b8',
+    padding: '10px 16px',
+    backgroundColor: '#ffffff',
+    border: '1px solid rgba(183, 198, 194, 0.4)',
+    borderRadius: '9999px',
+    color: '#576561',
     fontSize: '12.5px',
-    fontWeight: '600',
+    fontWeight: '700',
     cursor: 'pointer'
-  },
-  btnSave: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '9px 20px',
-    backgroundColor: '#3b82f6',
-    border: 'none',
-    borderRadius: '10px',
-    color: '#ffffff',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(59, 130, 246, 0.3)'
   }
 };
-
