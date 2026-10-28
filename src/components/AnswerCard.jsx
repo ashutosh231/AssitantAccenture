@@ -13,6 +13,13 @@ import {
   Volume2
 } from 'lucide-react';
 import { countWords, estimateSpeechDuration } from '../utils/transcriptHelpers';
+import {
+  cleanMarkdown,
+  stripBrackets,
+  parseFillInTheBlanks,
+  parseCorrectTheSentence,
+  getCleanSpokenText
+} from '../utils/outputFormatter';
 
 export function AnswerCard({
   answer,
@@ -24,6 +31,7 @@ export function AnswerCard({
   hasSnapshot
 }) {
   const [copied, setCopied] = useState(false);
+  const [copiedField, setCopiedField] = useState(null);
   const [activeSlide, setActiveSlide] = useState('answer'); // 'answer' | 'rubric'
 
   // When a new answer arrives, automatically slide to the answer view
@@ -33,14 +41,24 @@ export function AnswerCard({
     }
   }, [answer]);
 
-  const wordCount = countWords(answer || '');
-  const estSeconds = estimateSpeechDuration(answer || '');
+  // Calculate stats on the actual spoken text rather than raw markdown syntax
+  const spokenText = getCleanSpokenText(answer || '', selectedType);
+  const wordCount = countWords(spokenText);
+  const estSeconds = estimateSpeechDuration(spokenText);
 
   const handleCopy = () => {
     if (!answer) return;
-    navigator.clipboard.writeText(answer);
+    const textToCopy = getCleanSpokenText(answer, selectedType);
+    navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyCustom = (text, fieldName) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldName);
+    setTimeout(() => setCopiedField(null), 2000);
   };
 
   const isLoading = status === 'loading';
@@ -59,47 +77,151 @@ export function AnswerCard({
 
   const currentEmoji = EMOJI_MAP[selectedType] || '🎯';
 
-  // Format the output according to the assessment type
+  /**
+   * Highlight the missing word inside the complete sentence
+   */
+  const renderHighlightedSentence = (sentence, word) => {
+    if (!sentence) return null;
+    if (!word) return <span>{sentence}</span>;
+
+    const escapedWord = word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const regex = new RegExp(`(\\b${escapedWord}\\b)`, 'gi');
+    const parts = sentence.split(regex);
+
+    if (parts.length === 1 && sentence.toLowerCase().includes(word.toLowerCase())) {
+      const fallbackRegex = new RegExp(`(${escapedWord})`, 'gi');
+      const fallbackParts = sentence.split(fallbackRegex);
+      return (
+        <span>
+          {fallbackParts.map((part, index) =>
+            part.toLowerCase() === word.toLowerCase() ? (
+              <span key={index} style={styles.highlightPill}>
+                {part}
+              </span>
+            ) : (
+              <span key={index}>{part}</span>
+            )
+          )}
+        </span>
+      );
+    }
+
+    return (
+      <span>
+        {parts.map((part, index) =>
+          part.toLowerCase() === word.toLowerCase() ? (
+            <span key={index} style={styles.highlightPill}>
+              {part}
+            </span>
+          ) : (
+            <span key={index}>{part}</span>
+          )
+        )}
+      </span>
+    );
+  };
+
+  /**
+   * Format the output according to the assessment type
+   */
   const renderFormattedAssessmentOutput = () => {
     if (!answer) return null;
 
-    // 1. Correct the Wrong Sentence format
-    if (selectedType === 'Correct the Wrong Sentence') {
-      const parts = answer.split(/(?:Corrected Sentence:|Explanation:)/i).filter(Boolean);
-      const corrected = parts[0]?.trim() || answer;
-      const explanation = parts[1]?.trim() || '';
+    // 1. Fill in the Blanks format (Clean, parsed, separated into high-contrast Bento cards)
+    if (selectedType === 'Fill in the Blanks') {
+      const parsed = parseFillInTheBlanks(answer);
 
       return (
         <div style={styles.assessmentSection}>
-          <div style={styles.bentoOutputCard}>
-            <span style={styles.bentoCardLabel}>CORRECTED SENTENCE</span>
-            <p style={styles.highlightedOutputText}>{corrected}</p>
+          {/* Bento Card 1: Missing Word/Phrase Highlight Box */}
+          <div style={styles.missingWordCard}>
+            <div style={styles.cardHeaderRow}>
+              <span style={styles.bentoCardLabelRed}>MISSING WORD / PHRASE</span>
+              {parsed.missingWord && (
+                <button
+                  onClick={() => handleCopyCustom(parsed.missingWord, 'word')}
+                  style={styles.miniCopyBtn}
+                  title="Copy missing word"
+                >
+                  {copiedField === 'word' ? <Check size={12} color="#ca0013" /> : <Copy size={12} />}
+                  <span>{copiedField === 'word' ? 'Copied' : 'Copy Word'}</span>
+                </button>
+              )}
+            </div>
+
+            <div style={styles.missingWordHighlightRow}>
+              <div style={styles.iconCircleRedSmall}>✨</div>
+              <span style={styles.missingWordText}>{parsed.missingWord || '—'}</span>
+            </div>
           </div>
 
-          {explanation && (
-            <div style={{ ...styles.bentoOutputCard, backgroundColor: 'rgba(238, 235, 227, 0.7)' }}>
-              <span style={styles.bentoCardLabel}>GRAMMATICAL EXPLANATION</span>
-              <p style={styles.explanationText}>{explanation}</p>
+          {/* Bento Card 2: Complete Sentence (Ready to Speak) */}
+          <div style={styles.bentoOutputCard}>
+            <div style={styles.cardHeaderRow}>
+              <span style={styles.bentoCardLabel}>COMPLETE SENTENCE (READY TO SPEAK)</span>
+              {parsed.completeSentence && (
+                <button
+                  onClick={() => handleCopyCustom(parsed.completeSentence, 'sentence')}
+                  style={styles.miniCopyBtn}
+                  title="Copy full sentence"
+                >
+                  {copiedField === 'sentence' ? <Check size={12} color="#ca0013" /> : <Copy size={12} />}
+                  <span>{copiedField === 'sentence' ? 'Copied' : 'Copy Sentence'}</span>
+                </button>
+              )}
+            </div>
+            <p style={styles.completeSentenceText}>
+              {renderHighlightedSentence(parsed.completeSentence, parsed.missingWord)}
+            </p>
+          </div>
+
+          {/* Bento Card 3: Grammatical Rule & Explanation */}
+          {parsed.explanation && (
+            <div style={styles.explanationCard}>
+              <span style={styles.bentoCardLabelMuted}>GRAMMAR RULE & EXPLANATION</span>
+              <p style={styles.explanationText}>{parsed.explanation}</p>
             </div>
           )}
         </div>
       );
     }
 
-    // 2. Fill in the Blanks format
-    if (selectedType === 'Fill in the Blanks') {
+    // 2. Correct the Wrong Sentence format
+    if (selectedType === 'Correct the Wrong Sentence') {
+      const parsed = parseCorrectTheSentence(answer);
+
       return (
         <div style={styles.assessmentSection}>
           <div style={styles.bentoOutputCard}>
-            <span style={styles.bentoCardLabel}>COMPLETED SENTENCE & GRAMMAR RULE</span>
-            <div style={styles.standardAnswerText}>{answer}</div>
+            <div style={styles.cardHeaderRow}>
+              <span style={styles.bentoCardLabelRed}>CORRECTED SENTENCE (READY TO SPEAK)</span>
+              {parsed.corrected && (
+                <button
+                  onClick={() => handleCopyCustom(parsed.corrected, 'corrected')}
+                  style={styles.miniCopyBtn}
+                  title="Copy corrected sentence"
+                >
+                  {copiedField === 'corrected' ? <Check size={12} color="#ca0013" /> : <Copy size={12} />}
+                  <span>{copiedField === 'corrected' ? 'Copied' : 'Copy'}</span>
+                </button>
+              )}
+            </div>
+            <p style={styles.highlightedOutputText}>{parsed.corrected}</p>
           </div>
+
+          {parsed.explanation && (
+            <div style={styles.explanationCard}>
+              <span style={styles.bentoCardLabelMuted}>GRAMMATICAL EXPLANATION</span>
+              <p style={styles.explanationText}>{parsed.explanation}</p>
+            </div>
+          )}
         </div>
       );
     }
 
     // 3. 45-Second Speech format
     if (selectedType === '45-Second Speech') {
+      const cleanSpeech = cleanMarkdown(answer);
       const isTargetMet = wordCount >= 85 && wordCount <= 125;
       return (
         <div style={styles.assessmentSection}>
@@ -116,27 +238,42 @@ export function AnswerCard({
             </span>
           </div>
 
-          <div style={styles.standardAnswerText}>{answer}</div>
+          <div style={styles.standardAnswerText}>{cleanSpeech}</div>
         </div>
       );
     }
 
-    // 4. Repeat What You Hear
+    // 4. Repeat What You Hear format
     if (selectedType === 'Repeat What You Hear') {
+      const cleanVerbatim = stripBrackets(cleanMarkdown(answer));
       return (
         <div style={styles.assessmentSection}>
           <div style={styles.repeatQuoteCard}>
-            <span style={styles.bentoCardLabel}>VERBATIM RECALL SCRIPT</span>
-            <p style={styles.verbatimText}>"{answer}"</p>
+            <span style={styles.bentoCardLabelRed}>VERBATIM RECALL SCRIPT</span>
+            <p style={styles.verbatimText}>"{cleanVerbatim}"</p>
           </div>
         </div>
       );
     }
 
-    // Default for Scenario-Based Reply, Situation-Based Answer, Read Aloud
+    // 5. Read Aloud format
+    if (selectedType === 'Read Aloud') {
+      const cleanRead = stripBrackets(cleanMarkdown(answer));
+      return (
+        <div style={styles.assessmentSection}>
+          <div style={styles.bentoOutputCard}>
+            <span style={styles.bentoCardLabelRed}>READ ALOUD SCRIPT (SPEAK CLEARLY)</span>
+            <p style={styles.highlightedOutputText}>{cleanRead}</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Default for Scenario-Based Reply & Situation-Based Answer
+    const cleanGeneral = cleanMarkdown(answer);
     return (
       <div style={styles.standardAnswerContainer}>
-        <div style={styles.standardAnswerText}>{answer}</div>
+        <div style={styles.standardAnswerText}>{cleanGeneral}</div>
       </div>
     );
   };
@@ -466,33 +603,131 @@ const styles = {
     gap: '10px',
     width: '100%'
   },
+  missingWordCard: {
+    backgroundColor: '#ffffff',
+    border: '1.5px solid rgba(202, 0, 19, 0.25)',
+    borderRadius: '20px',
+    padding: '14px 16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    boxShadow: '0 8px 24px -6px rgba(202, 0, 19, 0.08)'
+  },
+  cardHeaderRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%'
+  },
+  missingWordHighlightRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
+  },
+  iconCircleRedSmall: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    backgroundColor: '#ca0013',
+    color: '#ffffff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '18px',
+    flexShrink: 0,
+    boxShadow: '0 4px 12px rgba(202, 0, 19, 0.25)'
+  },
+  missingWordText: {
+    fontSize: '24px',
+    fontWeight: '900',
+    color: '#ca0013',
+    letterSpacing: '-0.3px',
+    userSelect: 'text'
+  },
+  miniCopyBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '3px 9px',
+    borderRadius: '9999px',
+    border: '1px solid rgba(183, 198, 194, 0.4)',
+    backgroundColor: '#ffffff',
+    fontSize: '11px',
+    fontWeight: '800',
+    color: '#171e19',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease'
+  },
   bentoOutputCard: {
     backgroundColor: '#ffffff',
     border: '1px solid rgba(183, 198, 194, 0.35)',
-    borderRadius: '16px',
-    padding: '12px 14px',
+    borderRadius: '20px',
+    padding: '14px 16px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px'
+    gap: '6px'
+  },
+  explanationCard: {
+    backgroundColor: 'rgba(238, 235, 227, 0.65)',
+    border: '1px solid rgba(183, 198, 194, 0.35)',
+    borderRadius: '20px',
+    padding: '14px 16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px'
   },
   bentoCardLabel: {
     fontSize: '9.5px',
     fontWeight: '800',
+    color: '#576561',
+    letterSpacing: '0.8px',
+    textTransform: 'uppercase'
+  },
+  bentoCardLabelRed: {
+    fontSize: '9.5px',
+    fontWeight: '900',
     color: '#ca0013',
     letterSpacing: '0.8px',
     textTransform: 'uppercase'
   },
-  highlightedOutputText: {
-    fontSize: '16px',
+  bentoCardLabelMuted: {
+    fontSize: '9.5px',
+    fontWeight: '800',
+    color: '#7b8a86',
+    letterSpacing: '0.8px',
+    textTransform: 'uppercase'
+  },
+  completeSentenceText: {
+    fontSize: '17px',
     fontWeight: '800',
     color: '#171e19',
-    lineHeight: '1.45'
+    lineHeight: '1.55',
+    margin: 0,
+    userSelect: 'text'
+  },
+  highlightPill: {
+    color: '#ca0013',
+    backgroundColor: 'rgba(202, 0, 19, 0.08)',
+    borderBottom: '2px solid #ca0013',
+    padding: '1px 6px',
+    borderRadius: '4px',
+    fontWeight: '900'
+  },
+  highlightedOutputText: {
+    fontSize: '17px',
+    fontWeight: '800',
+    color: '#171e19',
+    lineHeight: '1.5',
+    margin: 0,
+    userSelect: 'text'
   },
   explanationText: {
     fontSize: '13.5px',
     fontWeight: '600',
     color: '#576561',
-    lineHeight: '1.5'
+    lineHeight: '1.55',
+    margin: 0,
+    userSelect: 'text'
   },
   speechPaceBanner: {
     display: 'flex',
@@ -516,16 +751,18 @@ const styles = {
     borderRadius: '8px'
   },
   repeatQuoteCard: {
-    backgroundColor: 'rgba(238, 235, 227, 0.4)',
+    backgroundColor: 'rgba(238, 235, 227, 0.45)',
     borderLeft: '4px solid #ca0013',
-    borderRadius: '12px',
-    padding: '14px 16px'
+    borderRadius: '16px',
+    padding: '16px 18px'
   },
   verbatimText: {
-    fontSize: '17px',
+    fontSize: '17.5px',
     fontWeight: '800',
     color: '#171e19',
-    lineHeight: '1.55'
+    lineHeight: '1.55',
+    margin: 0,
+    userSelect: 'text'
   },
   loadingContainer: {
     display: 'flex',

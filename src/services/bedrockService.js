@@ -110,18 +110,18 @@ Instructions:
       return `${baseRules}
 Assessment Type: Correct the Wrong Sentence.
 Instructions:
-- Format your output into two clear sections:
-  1. Corrected Sentence: (The grammatically correct version)
-  2. Explanation: (A concise 1-2 sentence explanation of the specific grammatical error and correction rule).`;
+- Format your output into two clean sections without markdown headers (no ###) or square brackets:
+  Corrected Sentence: (The grammatically correct version)
+  Explanation: (A concise 1-2 sentence explanation of the specific grammatical error and correction rule).`;
 
     case 'Fill in the Blanks':
       return `${baseRules}
 Assessment Type: Fill in the Blanks.
 Instructions:
-- Format your output into three concise sections:
-  1. Missing Word/Phrase: [the exact word or phrase]
-  2. Complete Sentence: [the full sentence with the blank filled]
-  3. Explanation: [brief explanation of why this word/tense/form is grammatically required].`;
+- Format your output into three clean sections without markdown headers (no ###) or square brackets:
+  Missing Word/Phrase: (the exact word or phrase)
+  Complete Sentence: (the full sentence with the blank filled)
+  Explanation: (brief explanation of why this word/tense/form is grammatically required).`;
 
     case '45-Second Speech':
       return `${baseRules}
