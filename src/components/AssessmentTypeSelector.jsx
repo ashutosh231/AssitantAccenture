@@ -6,8 +6,7 @@ import {
   Volume2,
   CheckCircle2,
   Sparkles,
-  Mic,
-  Mail
+  Mic
 } from 'lucide-react';
 import { ASSESSMENT_TYPES } from '../services/bedrockService';
 
@@ -18,8 +17,7 @@ const ICON_MAP = {
   Volume2,
   CheckCircle2,
   Sparkles,
-  Mic,
-  Mail
+  Mic
 };
 
 export function AssessmentTypeSelector({ selectedType, onSelectType }) {

@@ -5,7 +5,7 @@ import {
   buildSystemPrompt
 } from '../src/services/bedrockService.js';
 
-test('ASSESSMENT_TYPES includes all 8 specified assessment categories', () => {
+test('ASSESSMENT_TYPES includes all 7 active assessment categories', () => {
   const expectedTypes = [
     'Scenario-Based Reply',
     'Situation-Based Answer',
@@ -13,11 +13,10 @@ test('ASSESSMENT_TYPES includes all 8 specified assessment categories', () => {
     'Repeat What You Hear',
     'Correct the Wrong Sentence',
     'Fill in the Blanks',
-    '45-Second Speech',
-    'Professional Email'
+    '45-Second Speech'
   ];
 
-  assert.equal(ASSESSMENT_TYPES.length, 8);
+  assert.equal(ASSESSMENT_TYPES.length, 7);
   const actualIds = ASSESSMENT_TYPES.map((t) => t.id);
   assert.deepEqual(actualIds, expectedTypes);
 });
@@ -64,12 +63,4 @@ test('buildSystemPrompt builds specific instructions for each assessment categor
   // 45-Second Speech: 90-120 words
   const speechPrompt = buildSystemPrompt('45-Second Speech');
   assert.ok(speechPrompt.includes('90–120 words'));
-
-  // Professional Email: Subject, Greeting, Body, Closing
-  const emailPrompt = buildSystemPrompt('Professional Email');
-  assert.ok(emailPrompt.includes('Subject:'));
-  assert.ok(emailPrompt.includes('Greeting:'));
-  assert.ok(emailPrompt.includes('Body:'));
-  assert.ok(emailPrompt.includes('Closing:'));
 });
-

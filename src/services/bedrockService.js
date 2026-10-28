@@ -60,13 +60,6 @@ export const ASSESSMENT_TYPES = [
     tag: '90-120 Words Delivery',
     shortDesc: 'Natural spoken response (~90-120 words) with intro, 2-3 points, and conclusion.',
     icon: 'Mic'
-  },
-  {
-    id: 'Professional Email',
-    title: 'Professional Email',
-    tag: 'Business Correspondence',
-    shortDesc: 'Subject, greeting, concise body, and professional closing.',
-    icon: 'Mail'
   }
 ];
 
@@ -140,17 +133,6 @@ Instructions:
   2. Two or three crisp, well-connected points with practical examples (3-4 sentences)
   3. Memorable concluding takeaway (1 sentence)
 - Use natural conversational transition words (e.g. "Firstly", "In addition", "Ultimately").`;
-
-    case 'Professional Email':
-      return `${baseRules}
-Assessment Type: Professional Email.
-Instructions:
-- Generate a professional email tailored to the situation, recipient, and requested tone.
-- Include:
-  - Subject: [Clear, informative subject line]
-  - Greeting: [Appropriate professional salutation]
-  - Body: [2-3 concise paragraphs covering context, action items, and next steps]
-  - Closing: [Professional sign-off and name placeholder].`;
 
     default:
       return `${baseRules}

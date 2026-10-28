@@ -8,7 +8,6 @@ import {
   Volume2,
   CheckCircle2,
   Mic,
-  Mail,
   ChevronRight
 } from 'lucide-react';
 import { ASSESSMENT_TYPES } from '../services/bedrockService';
@@ -20,8 +19,7 @@ const ICON_MAP = {
   Volume2,
   CheckCircle2,
   Sparkles,
-  Mic,
-  Mail
+  Mic
 };
 
 export function AssessmentPickerModal({
