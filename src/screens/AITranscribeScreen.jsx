@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Volume2, Info, AlertTriangle, Sparkles, ChevronDown, Mic, Clock, Gauge, Copy, Check } from 'lucide-react';
+import { Volume2, AlertTriangle, Mic, Copy, Check } from 'lucide-react';
 import { useTranscription } from '../hooks/useTranscription';
 import { AssessmentTypeSelector } from '../components/AssessmentTypeSelector';
 import { AudioWaveform } from '../components/AudioWaveform';
@@ -92,12 +92,15 @@ export function AITranscribeScreen() {
           onSelectType={setSelectedAssessmentType}
         />
 
-        {/* 2. Hero Feature Card: 40px radius, decorative blob, 64x64 icon, bento metrics, alert box */}
-        <div className="hero-card">
-          <div className="decorative-blob" />
-
+        {/* 2. Hero Feature Card: compact — status pill, title, waveform only */}
+        <div className="hero-card" style={styles.heroCardCompact}>
           <div className="hero-top-row">
-            <div className="icon-holder-64">{currentEmoji}</div>
+            <div style={styles.heroTitleGroup}>
+              <div className="icon-holder-64" style={styles.heroIconSmall}>{currentEmoji}</div>
+              <div>
+                <span style={styles.heroSubheader}>{selectedAssessmentType}</span>
+              </div>
+            </div>
             <div style={styles.heroStatusPill}>
               <div
                 style={{
@@ -107,14 +110,9 @@ export function AITranscribeScreen() {
                 }}
               />
               <span style={styles.statusLabel}>
-                {listeningStatus === 'listening' ? 'LIVE AUDIO' : listeningStatus.toUpperCase()}
+                {listeningStatus === 'listening' ? 'LIVE' : listeningStatus.toUpperCase()}
               </span>
             </div>
-          </div>
-
-          <div>
-            <span style={styles.heroSubheader}>ACTIVE MODULE</span>
-            <h2 style={styles.heroMainTitle}>{selectedAssessmentType}</h2>
           </div>
 
           {/* Waveform Visualizer */}
@@ -123,39 +121,6 @@ export function AITranscribeScreen() {
             audioLevel={audioLevel}
             sessionDuration={sessionDuration}
           />
-
-          {/* Nested 2-column Grid for Bento Metrics */}
-          <div className="bento-metric-grid">
-            <div className="bento-metric-card">
-              <div className="bento-icon-circle">
-                <Mic size={16} />
-              </div>
-              <div className="bento-text-group">
-                <span className="bento-title">SOURCE</span>
-                <span className="bento-value">Laptop Audio</span>
-              </div>
-            </div>
-
-            <div className="bento-metric-card">
-              <div className="bento-icon-circle">
-                <Gauge size={16} />
-              </div>
-              <div className="bento-text-group">
-                <span className="bento-title">TARGET PACE</span>
-                <span className="bento-value">
-                  {selectedAssessmentType === '45-Second Speech' ? '90-120 Words' : '135 WPM'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Alert / Info box at bottom using #b7c6c2/20 background */}
-          <div className="hero-alert-box">
-            <Info size={18} color="#576561" style={{ flexShrink: 0 }} />
-            <span className="hero-alert-text">
-              Phone captures laptop audio acoustically. Keep your phone near the laptop speakers in a quiet room.
-            </span>
-          </div>
         </div>
 
         {/* 3. Error Banner (if any) */}
@@ -179,21 +144,18 @@ export function AITranscribeScreen() {
             {/* Box Header */}
             <div style={styles.boxTopRow}>
               <div style={styles.boxTitleGroup}>
-                <div className="feed-icon-56" style={{ width: '42px', height: '42px', borderRadius: '14px' }}>
-                  <Volume2 size={20} />
+                <div className="feed-icon-56" style={{ width: '36px', height: '36px', borderRadius: '12px' }}>
+                  <Volume2 size={17} />
                 </div>
-                <div>
-                  <div style={styles.boxTagRow}>
-                    <span style={styles.boxTitle}>CONTINUOUS SPEECH FEED</span>
-                    {listeningStatus === 'listening' && (
-                      <span style={styles.liveBadge}>
-                        <span style={styles.livePulseDot} /> LIVE
-                      </span>
-                    )}
-                  </div>
-                  <span style={styles.boxSub}>
-                    {hasContent ? 'Unified into 1 box across all pauses' : 'Waiting for laptop audio...'}
+                <div style={styles.boxTagRow}>
+                  <span style={styles.boxTitle}>
+                    {listeningStatus === 'listening' ? 'LISTENING…' : 'SPEECH FEED'}
                   </span>
+                  {listeningStatus === 'listening' && (
+                    <span style={styles.liveBadge}>
+                      <span style={styles.livePulseDot} /> LIVE
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -213,7 +175,7 @@ export function AITranscribeScreen() {
             <div style={styles.boxBody}>
               {!hasContent ? (
                 <p style={styles.placeholderText}>
-                  Tap <strong>Listen</strong> below. Words spoken by your laptop will flow continuously into this box as a single passage without creating separate boxes on pauses.
+                  Tap <strong>Listen</strong> — laptop speech flows in here.
                 </p>
               ) : (
                 <p style={styles.continuousText}>
@@ -264,6 +226,21 @@ const styles = {
     backgroundColor: '#eeebe3',
     position: 'relative'
   },
+  heroCardCompact: {
+    padding: '14px 18px',
+    gap: '10px'
+  },
+  heroTitleGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  heroIconSmall: {
+    width: '36px',
+    height: '36px',
+    fontSize: '18px',
+    flexShrink: 0
+  },
   heroStatusPill: {
     display: 'flex',
     alignItems: 'center',
@@ -285,11 +262,10 @@ const styles = {
     letterSpacing: '0.8px'
   },
   heroSubheader: {
-    fontSize: '10px',
-    fontWeight: '800',
-    color: '#7b8a86',
-    letterSpacing: '1px',
-    textTransform: 'uppercase'
+    fontSize: '15px',
+    fontWeight: '900',
+    color: '#171e19',
+    letterSpacing: '-0.2px'
   },
   heroMainTitle: {
     fontSize: '22px',
@@ -338,9 +314,9 @@ const styles = {
   },
   unifiedCard: {
     flexDirection: 'column',
-    gap: '12px',
-    minHeight: '130px',
-    padding: '16px 18px'
+    gap: '10px',
+    minHeight: '110px',
+    padding: '14px 16px'
   },
   boxTopRow: {
     display: 'flex',
@@ -359,7 +335,7 @@ const styles = {
     gap: '8px'
   },
   boxTitle: {
-    fontSize: '13.5px',
+    fontSize: '12.5px',
     fontWeight: '800',
     color: '#171e19'
   },
@@ -382,7 +358,7 @@ const styles = {
     boxShadow: '0 0 6px rgba(202, 0, 19, 0.8)'
   },
   boxSub: {
-    fontSize: '11.5px',
+    fontSize: '11px',
     fontWeight: '600',
     color: '#7b8a86'
   },
@@ -390,7 +366,7 @@ const styles = {
     paddingTop: '6px',
     borderTop: '1px solid rgba(183, 198, 194, 0.25)',
     width: '100%',
-    maxHeight: '260px',
+    maxHeight: '300px',
     overflowY: 'auto'
   },
   placeholderText: {
