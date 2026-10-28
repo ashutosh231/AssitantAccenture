@@ -1,9 +1,10 @@
-import React, { useRef, useEffect } from 'react';
-import { Volume2, Info, AlertTriangle, ArrowRight } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { Volume2, Info, AlertTriangle, Sparkles, ChevronDown } from 'lucide-react';
 import { useTranscription } from '../hooks/useTranscription';
 import { AudioWaveform } from '../components/AudioWaveform';
 import { TranscriptSegment } from '../components/TranscriptSegment';
 import { RecordingControls } from '../components/RecordingControls';
+import { AssessmentPickerModal } from '../components/AssessmentPickerModal';
 
 export function AITranscribeScreen() {
   const {
@@ -14,13 +15,16 @@ export function AITranscribeScreen() {
     sessionDuration,
     audioLevel,
     togglePlayPause,
-    handleSendToAI,
     newTranscript,
     clearTranscript,
     liveTranscriptText,
+    selectedAssessmentType,
+    setSelectedAssessmentType,
+    submitToBedrock,
     setActiveTab
   } = useTranscription();
 
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
   const scrollBottomRef = useRef(null);
 
   // Auto-scroll when new text or segments arrive
@@ -31,6 +35,27 @@ export function AITranscribeScreen() {
   }, [finalizedSegments, interimTranscript]);
 
   const hasContent = !!(finalizedSegments.length > 0 || interimTranscript.trim());
+
+  /**
+   * When user taps "Send to AI", open assessment selector
+   */
+  const handleOpenPicker = () => {
+    if (!hasContent) {
+      alert('The transcript is currently empty. Please capture speech from the laptop first.');
+      return;
+    }
+    setIsPickerOpen(true);
+  };
+
+  /**
+   * When user selects a specific assessment type from the picker modal
+   */
+  const handleSelectAndSubmit = (chosenType) => {
+    setSelectedAssessmentType(chosenType);
+    submitToBedrock(liveTranscriptText, chosenType);
+    setIsPickerOpen(false);
+    setActiveTab('answer');
+  };
 
   return (
     <div className="screen" style={styles.screen}>
@@ -80,7 +105,7 @@ export function AITranscribeScreen() {
               </div>
               <div style={styles.tipItem}>
                 <span style={styles.tipNum}>3</span>
-                <span>Review the suggested response and speak your answer verbally.</span>
+                <span>Select the assessment category to receive the exact answer format.</span>
               </div>
             </div>
           </div>
@@ -99,14 +124,39 @@ export function AITranscribeScreen() {
         )}
       </div>
 
-      {/* 5. Sticky Bottom Recording Controls */}
+      {/* 5. Quick Assessment Format Indicator Bar */}
+      <div style={styles.typeBar}>
+        <div style={styles.typeBarLeft}>
+          <Sparkles size={13} color="#c084fc" />
+          <span style={styles.typeBarLabel}>TARGET FORMAT:</span>
+        </div>
+        <button
+          onClick={() => setIsPickerOpen(true)}
+          style={styles.typeBarBtn}
+          title="Change assessment format"
+        >
+          <span style={styles.typeBarValue}>{selectedAssessmentType}</span>
+          <ChevronDown size={13} color="#c084fc" />
+        </button>
+      </div>
+
+      {/* 6. Sticky Bottom Recording Controls */}
       <RecordingControls
         listeningStatus={listeningStatus}
         hasContent={hasContent}
         onTogglePlayPause={togglePlayPause}
-        onSendToAI={handleSendToAI}
+        onSendToAI={handleOpenPicker}
         onNewTranscript={newTranscript}
         onClearTranscript={clearTranscript}
+      />
+
+      {/* 7. Assessment Type Selection Bottom Sheet */}
+      <AssessmentPickerModal
+        isOpen={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+        transcriptText={liveTranscriptText}
+        selectedType={selectedAssessmentType}
+        onSelectAndSubmit={handleSelectAndSubmit}
       />
     </div>
   );
@@ -118,7 +168,8 @@ const styles = {
     flexDirection: 'column',
     height: '100%',
     overflow: 'hidden',
-    backgroundColor: '#080c15'
+    backgroundColor: '#080c15',
+    position: 'relative'
   },
   errorBanner: {
     backgroundColor: 'rgba(239, 68, 68, 0.15)',
@@ -209,6 +260,40 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '10px'
+  },
+  typeBar: {
+    padding: '6px 14px',
+    backgroundColor: '#0c1322',
+    borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  typeBarLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px'
+  },
+  typeBarLabel: {
+    fontSize: '10px',
+    fontWeight: '700',
+    color: '#64748b',
+    letterSpacing: '0.4px'
+  },
+  typeBarBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    background: 'none',
+    border: '1px solid rgba(168, 85, 247, 0.3)',
+    borderRadius: '8px',
+    padding: '3px 8px',
+    cursor: 'pointer',
+    backgroundColor: 'rgba(139, 92, 246, 0.1)'
+  },
+  typeBarValue: {
+    fontSize: '11.5px',
+    fontWeight: '600',
+    color: '#c084fc'
   }
 };
-

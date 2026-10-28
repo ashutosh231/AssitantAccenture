@@ -24,6 +24,14 @@ export function AITextAnswerScreen() {
   const hasLiveTranscript = !!liveTranscriptText?.trim();
   const hasSnapshot = !!submittedSnapshot?.text;
 
+  const handleSelectType = (newType) => {
+    setSelectedAssessmentType(newType);
+    const targetText = submittedSnapshot?.text || (hasLiveTranscript ? liveTranscriptText : '');
+    if (targetText && targetText.trim()) {
+      submitToBedrock(targetText.trim(), newType);
+    }
+  };
+
   const handleGetAnswerForLive = () => {
     if (hasLiveTranscript) {
       submitToBedrock(liveTranscriptText, selectedAssessmentType);
@@ -38,7 +46,7 @@ export function AITextAnswerScreen() {
       {/* 1. Assessment Type Selector */}
       <AssessmentTypeSelector
         selectedType={selectedAssessmentType}
-        onSelectType={setSelectedAssessmentType}
+        onSelectType={handleSelectType}
       />
 
       <div style={styles.scrollContent}>
