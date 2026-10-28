@@ -297,7 +297,8 @@ export function AppProvider({ children }) {
 
   /**
    * Send to AI button handler:
-   * Takes immutable snapshot, triggers Bedrock, switches to Answer tab
+   * Takes immutable snapshot, triggers Bedrock, switches to Answer tab,
+   * then clears the transcript so a fresh recording can begin immediately.
    */
   const handleSendToAI = useCallback(() => {
     const fullText = compileTranscriptText(finalizedSegments, interimTranscript);
@@ -306,7 +307,18 @@ export function AppProvider({ children }) {
       return;
     }
 
+    // Submit the snapshot to AI (snapshot is captured inside submitToBedrock before clearing)
     submitToBedrock(fullText);
+
+    // Clear transcript immediately so the next recording starts fresh
+    setFinalizedSegments([]);
+    setInterimTranscript('');
+    setSessionDuration(0);
+    setSessionStartTime(null);
+    if (transcribeServiceRef.current) {
+      transcribeServiceRef.current.processedResultIds.clear();
+    }
+
     setActiveTab('answer');
   }, [finalizedSegments, interimTranscript, submitToBedrock]);
 

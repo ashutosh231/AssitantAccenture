@@ -63,8 +63,11 @@ export function AITranscribeScreen() {
 
   const handleSelectAndSubmit = (chosenType) => {
     setSelectedAssessmentType(chosenType);
+    // Snapshot the current text before clearing
     submitToBedrock(liveTranscriptText, chosenType);
     setIsPickerOpen(false);
+    // Clear transcript so next recording starts fresh
+    newTranscript();
     setActiveTab('answer');
   };
 
