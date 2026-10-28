@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Copy,
   Check,
@@ -7,10 +7,9 @@ import {
   Clock,
   AlertTriangle,
   FileText,
-  CheckCircle,
   HelpCircle,
   Gauge,
-  BookOpen,
+  SlidersHorizontal,
   Volume2
 } from 'lucide-react';
 import { countWords, estimateSpeechDuration } from '../utils/transcriptHelpers';
@@ -25,6 +24,14 @@ export function AnswerCard({
   hasSnapshot
 }) {
   const [copied, setCopied] = useState(false);
+  const [activeSlide, setActiveSlide] = useState('answer'); // 'answer' | 'rubric'
+
+  // When a new answer arrives, automatically slide to the answer view
+  useEffect(() => {
+    if (answer) {
+      setActiveSlide('answer');
+    }
+  }, [answer]);
 
   const wordCount = countWords(answer || '');
   const estSeconds = estimateSpeechDuration(answer || '');
@@ -39,7 +46,7 @@ export function AnswerCard({
   const isLoading = status === 'loading';
   const isError = status === 'error';
 
-  // Emoji map for the 64x64px icon holder
+  // Emoji map for the assessment categories
   const EMOJI_MAP = {
     'Scenario-Based Reply': '💬',
     'Situation-Based Answer': '🧠',
@@ -70,7 +77,7 @@ export function AnswerCard({
           </div>
 
           {explanation && (
-            <div style={{ ...styles.bentoOutputCard, backgroundColor: 'rgba(238, 235, 227, 0.6)' }}>
+            <div style={{ ...styles.bentoOutputCard, backgroundColor: 'rgba(238, 235, 227, 0.7)' }}>
               <span style={styles.bentoCardLabel}>GRAMMATICAL EXPLANATION</span>
               <p style={styles.explanationText}>{explanation}</p>
             </div>
@@ -105,7 +112,7 @@ export function AnswerCard({
                 color: isTargetMet ? '#171e19' : '#ca0013'
               }}
             >
-              {wordCount} / 90-120 Words ({isTargetMet ? 'Perfect Pace' : 'Adjust Delivery'})
+              {wordCount} / 90-120 Words ({isTargetMet ? 'Optimal Pace' : 'Adjust Delivery'})
             </span>
           </div>
 
@@ -135,184 +142,319 @@ export function AnswerCard({
   };
 
   return (
-    <div className="hero-card">
-      {/* 1. Semi-transparent decorative blob (#b7c6c2/20) in the top-right */}
-      <div className="decorative-blob" />
+    <div className="hero-card" style={styles.heroCardCustom}>
+      {/* 1. Interactive Slider Switch at the top */}
+      <div style={styles.sliderTrack}>
+        <button
+          onClick={() => setActiveSlide('answer')}
+          style={{
+            ...styles.sliderTab,
+            backgroundColor: activeSlide === 'answer' ? '#171e19' : 'transparent',
+            color: activeSlide === 'answer' ? '#ffffff' : '#576561'
+          }}
+        >
+          <Sparkles size={14} color={activeSlide === 'answer' ? '#ca0013' : '#7b8a86'} />
+          <span>Spoken Answer</span>
+        </button>
 
-      {/* Top Header Row with 64x64px white icon holder and Actions */}
-      <div className="hero-top-row">
-        <div className="icon-holder-64">{currentEmoji}</div>
-
-        <div style={styles.actionButtonGroup}>
-          {answer && (
-            <button onClick={handleCopy} className="btn-secondary-white" title="Copy answer">
-              {copied ? <Check size={14} color="#ca0013" /> : <Copy size={14} />}
-              <span>{copied ? 'Copied' : 'Copy'}</span>
-            </button>
-          )}
-
-          {hasSnapshot && (
-            <button
-              onClick={onRegenerate}
-              disabled={isLoading}
-              className="btn-primary-red"
-              style={{ padding: '8px 16px', fontSize: '13px' }}
-              title="Regenerate answer"
-            >
-              <RotateCw size={14} className={isLoading ? 'spin-icon' : ''} />
-              <span>Regenerate</span>
-            </button>
-          )}
-        </div>
+        <button
+          onClick={() => setActiveSlide('rubric')}
+          style={{
+            ...styles.sliderTab,
+            backgroundColor: activeSlide === 'rubric' ? '#171e19' : 'transparent',
+            color: activeSlide === 'rubric' ? '#ffffff' : '#576561'
+          }}
+        >
+          <SlidersHorizontal size={14} color={activeSlide === 'rubric' ? '#ca0013' : '#7b8a86'} />
+          <span>Metrics & Guide</span>
+        </button>
       </div>
 
-      {/* Title & Subheading */}
-      <div style={styles.heroTitleGroup}>
-        <span style={styles.heroCategoryLabel}>SELECTED ASSESSMENT</span>
-        <h2 style={styles.heroHeading}>{selectedType}</h2>
-      </div>
+      {/* Slide 1: Spoken Response View (Dedicated, clean, zero overlap) */}
+      {activeSlide === 'answer' && (
+        <div style={styles.slideView}>
+          {/* Top Bar with Icon, Title, and Actions */}
+          <div style={styles.responseTopRow}>
+            <div style={styles.responseTitleGroup}>
+              <div style={styles.iconCircleSmall}>{currentEmoji}</div>
+              <div>
+                <span style={styles.miniLabel}>TARGET SCRIPT</span>
+                <h3 style={styles.responseHeading}>{selectedType}</h3>
+              </div>
+            </div>
 
-      {/* 3. Nested 2-column Grid for Bento Metrics */}
-      <div className="bento-metric-grid">
-        {/* Bento Metric 1 */}
-        <div className="bento-metric-card">
-          <div className="bento-icon-circle">
-            <Gauge size={16} />
-          </div>
-          <div className="bento-text-group">
-            <span className="bento-title">TARGET PACE</span>
-            <span className="bento-value">
-              {selectedType === '45-Second Speech' ? '90-120 Words' : '135 WPM'}
-            </span>
-          </div>
-        </div>
+            <div style={styles.actionButtonGroup}>
+              {answer && (
+                <button onClick={handleCopy} className="btn-secondary-white" title="Copy answer">
+                  {copied ? <Check size={14} color="#ca0013" /> : <Copy size={14} />}
+                  <span>{copied ? 'Copied' : 'Copy'}</span>
+                </button>
+              )}
 
-        {/* Bento Metric 2 */}
-        <div className="bento-metric-card">
-          <div className="bento-icon-circle">
-            <Clock size={16} />
-          </div>
-          <div className="bento-text-group">
-            <span className="bento-title">EST. DURATION</span>
-            <span className="bento-value">
-              {answer ? `~${estSeconds}s (${wordCount}w)` : 'Ready'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div style={styles.bodyArea}>
-        {isLoading && (
-          <div style={styles.loadingContainer}>
-            <div style={styles.spinner} />
-            <div style={styles.loadingText}>
-              <span style={styles.loadingBold}>Generating Assessment Response...</span>
-              <span style={styles.loadingSub}>
-                Applying {selectedType} criteria via Bedrock
-              </span>
+              {hasSnapshot && (
+                <button
+                  onClick={onRegenerate}
+                  disabled={isLoading}
+                  className="btn-primary-red"
+                  style={{ padding: '8px 14px', fontSize: '12.5px' }}
+                  title="Regenerate answer"
+                >
+                  <RotateCw size={13} className={isLoading ? 'spin-icon' : ''} />
+                  <span>Regenerate</span>
+                </button>
+              )}
             </div>
           </div>
-        )}
 
-        {isError && (
-          <div style={styles.errorContainer}>
-            <div style={styles.errorHeader}>
-              <AlertTriangle size={18} color="#ca0013" />
-              <span style={styles.errorTitle}>Generation Interrupted</span>
+          {/* Quick Stats Pill Row */}
+          {answer && !isLoading && (
+            <div style={styles.statsPillRow}>
+              <div style={styles.statPill}>
+                <Clock size={12} color="#ca0013" />
+                <span>~{estSeconds}s Speaking Time</span>
+              </div>
+              <div style={styles.statPill}>
+                <span style={{ fontWeight: '800' }}>{wordCount} Words</span>
+              </div>
             </div>
-            <p style={styles.errorMsg}>{error}</p>
-            <button onClick={onRegenerate} className="btn-primary-red" style={{ alignSelf: 'flex-start', marginTop: '6px' }}>
-              <RotateCw size={14} /> Retry
-            </button>
-          </div>
-        )}
+          )}
 
-        {!isLoading && answer && renderFormattedAssessmentOutput()}
+          {/* Loading State */}
+          {isLoading && (
+            <div style={styles.loadingContainer}>
+              <div style={styles.spinner} />
+              <div style={styles.loadingText}>
+                <span style={styles.loadingBold}>Generating Assessment Response...</span>
+                <span style={styles.loadingSub}>
+                  Applying {selectedType} criteria via Bedrock
+                </span>
+              </div>
+            </div>
+          )}
 
-        {!isLoading && !answer && !isError && (
-          <div style={styles.emptyContainer}>
-            <FileText size={36} color="#b7c6c2" />
-            <p style={styles.emptyTitle}>Ready for assessment question</p>
-            <p style={styles.emptySub}>
-              Switch to <strong>AI Transcribe</strong> to capture laptop speech, or tap the red Center Action button.
-            </p>
-            {hasSnapshot && (
-              <button onClick={onGetAnswer} className="btn-primary-red" style={{ marginTop: '8px' }}>
-                <Sparkles size={16} /> Get Answer for Snapshot
+          {/* Error State */}
+          {isError && (
+            <div style={styles.errorContainer}>
+              <div style={styles.errorHeader}>
+                <AlertTriangle size={18} color="#ca0013" />
+                <span style={styles.errorTitle}>Generation Interrupted</span>
+              </div>
+              <p style={styles.errorMsg}>{error}</p>
+              <button
+                onClick={onRegenerate}
+                className="btn-primary-red"
+                style={{ alignSelf: 'flex-start', marginTop: '6px' }}
+              >
+                <RotateCw size={14} /> Retry Request
               </button>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
 
-      {/* 4. Alert / Info box at bottom using #b7c6c2/20 background */}
-      <div className="hero-alert-box">
-        <HelpCircle size={18} color="#576561" style={{ flexShrink: 0 }} />
-        <span className="hero-alert-text">
-          {selectedType === '45-Second Speech' &&
-            'Practice speaking naturally with a crisp opening, 2-3 points, and a concluding sentence.'}
-          {selectedType === 'Read Aloud' &&
-            'Deliver this text with clear articulation and natural pauses at commas and periods.'}
-          {selectedType === 'Repeat What You Hear' &&
-            'Repeat the sentence verbatim with the exact words and sentence cadence.'}
-          {selectedType === 'Correct the Wrong Sentence' &&
-            'Speak the corrected sentence clearly, then provide the concise grammatical rule.'}
-          {selectedType === 'Fill in the Blanks' &&
-            'Insert the missing term smoothly into the sentence structure.'}
-          {selectedType === 'Scenario-Based Reply' &&
-            'Emphasize active collaboration, accountability, and practical problem solving.'}
-          {selectedType === 'Situation-Based Answer' &&
-            'Provide a logical, structured response directly answering the core scenario.'}
-        </span>
-      </div>
+          {/* Formatted Assessment Output */}
+          {!isLoading && answer && renderFormattedAssessmentOutput()}
+
+          {/* Empty State */}
+          {!isLoading && !answer && !isError && (
+            <div style={styles.emptyContainer}>
+              <FileText size={36} color="#b7c6c2" />
+              <p style={styles.emptyTitle}>Ready for assessment question</p>
+              <p style={styles.emptySub}>
+                Capture your laptop's audio on <strong>AI Transcribe</strong>, then tap the red Center Action button.
+              </p>
+              {hasSnapshot && (
+                <button onClick={onGetAnswer} className="btn-primary-red" style={{ marginTop: '8px' }}>
+                  <Sparkles size={16} /> Get Answer for Snapshot
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Slide 2: Metrics & Rubric Guide View */}
+      {activeSlide === 'rubric' && (
+        <div style={styles.slideView}>
+          <div style={styles.rubricTopRow}>
+            <div className="icon-holder-64">{currentEmoji}</div>
+            <div>
+              <span style={styles.miniLabel}>ASSESSMENT CRITERIA</span>
+              <h2 style={styles.rubricHeading}>{selectedType}</h2>
+            </div>
+          </div>
+
+          {/* 2-Column Bento Metric Grid */}
+          <div className="bento-metric-grid" style={{ marginTop: '6px' }}>
+            <div className="bento-metric-card">
+              <div className="bento-icon-circle">
+                <Gauge size={16} />
+              </div>
+              <div className="bento-text-group">
+                <span className="bento-title">TARGET PACE</span>
+                <span className="bento-value">
+                  {selectedType === '45-Second Speech' ? '90-120 Words' : '135 WPM'}
+                </span>
+              </div>
+            </div>
+
+            <div className="bento-metric-card">
+              <div className="bento-icon-circle">
+                <Clock size={16} />
+              </div>
+              <div className="bento-text-group">
+                <span className="bento-title">EST. DURATION</span>
+                <span className="bento-value">
+                  {answer ? `~${estSeconds}s (${wordCount}w)` : 'Ready'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Official Guidance Alert Box */}
+          <div className="hero-alert-box" style={{ marginTop: '10px' }}>
+            <HelpCircle size={18} color="#576561" style={{ flexShrink: 0 }} />
+            <span className="hero-alert-text">
+              {selectedType === '45-Second Speech' &&
+                'Deliver a natural spoken response between 90–120 words. Open with a crisp 1-sentence hook, provide 2–3 structured points, and end decisively.'}
+              {selectedType === 'Read Aloud' &&
+                'Read with clear diction and natural pauses at punctuation. Do not paraphrase or add filler words.'}
+              {selectedType === 'Repeat What You Hear' &&
+                'Repeat the exact sentence verbatim with matching grammatical cadence and vocabulary.'}
+              {selectedType === 'Correct the Wrong Sentence' &&
+                'Identify the grammatical error, deliver the corrected sentence clearly, and explain the rule concisely.'}
+              {selectedType === 'Fill in the Blanks' &&
+                'Insert the grammatically correct word/phrase and ensure sentence tense consistency.'}
+              {selectedType === 'Scenario-Based Reply' &&
+                'Emphasize polite, constructive workplace communication, active accountability, and practical next steps.'}
+              {selectedType === 'Situation-Based Answer' &&
+                'Answer the scenario logically and directly. Do not force unnecessary STAR formatting if not required.'}
+            </span>
+          </div>
+
+          <button
+            onClick={() => setActiveSlide('answer')}
+            className="btn-primary-red"
+            style={{ marginTop: '12px', width: '100%' }}
+          >
+            <Sparkles size={16} /> Back to Spoken Answer
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 const styles = {
+  heroCardCustom: {
+    padding: '18px 18px',
+    gap: '12px',
+    overflow: 'visible'
+  },
+  sliderTrack: {
+    display: 'flex',
+    alignItems: 'center',
+    backgroundColor: 'rgba(238, 235, 227, 0.7)',
+    borderRadius: '9999px',
+    padding: '4px',
+    gap: '4px',
+    border: '1px solid rgba(183, 198, 194, 0.35)',
+    width: '100%'
+  },
+  sliderTab: {
+    flex: 1,
+    height: '36px',
+    borderRadius: '9999px',
+    border: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    fontSize: '12px',
+    fontWeight: '800',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease'
+  },
+  slideView: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    width: '100%'
+  },
+  responseTopRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%'
+  },
+  responseTitleGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  iconCircleSmall: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    backgroundColor: 'rgba(202, 0, 19, 0.08)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '20px',
+    flexShrink: 0
+  },
+  miniLabel: {
+    fontSize: '9.5px',
+    fontWeight: '800',
+    color: '#7b8a86',
+    letterSpacing: '1px',
+    textTransform: 'uppercase'
+  },
+  responseHeading: {
+    fontSize: '18px',
+    fontWeight: '900',
+    color: '#171e19',
+    lineHeight: '1.2'
+  },
   actionButtonGroup: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    position: 'relative',
-    zIndex: 3
+    gap: '6px'
   },
-  heroTitleGroup: {
+  statsPillRow: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    position: 'relative',
-    zIndex: 2
+    alignItems: 'center',
+    gap: '8px'
   },
-  heroCategoryLabel: {
-    fontSize: '10px',
-    fontWeight: '800',
-    color: '#7b8a86',
-    textTransform: 'uppercase',
-    letterSpacing: '1px'
+  statPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    padding: '3px 10px',
+    borderRadius: '9999px',
+    backgroundColor: 'rgba(238, 235, 227, 0.6)',
+    border: '1px solid rgba(183, 198, 194, 0.3)',
+    fontSize: '11px',
+    fontWeight: '700',
+    color: '#576561'
   },
-  heroHeading: {
-    fontSize: '24px',
+  rubricTopRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    width: '100%'
+  },
+  rubricHeading: {
+    fontSize: '20px',
     fontWeight: '900',
     color: '#171e19',
-    letterSpacing: '-0.4px',
     lineHeight: '1.2'
   },
-  bodyArea: {
-    minHeight: '130px',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    position: 'relative',
-    zIndex: 2
-  },
   standardAnswerContainer: {
-    padding: '4px 0'
+    padding: '4px 0',
+    width: '100%'
   },
   standardAnswerText: {
-    fontSize: '15px',
-    fontWeight: '600',
+    fontSize: '16px',
+    fontWeight: '700',
     lineHeight: '1.65',
     color: '#171e19',
     whiteSpace: 'pre-wrap',
@@ -321,10 +463,11 @@ const styles = {
   assessmentSection: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '10px'
+    gap: '10px',
+    width: '100%'
   },
   bentoOutputCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: '#ffffff',
     border: '1px solid rgba(183, 198, 194, 0.35)',
     borderRadius: '16px',
     padding: '12px 14px',
@@ -343,10 +486,10 @@ const styles = {
     fontSize: '16px',
     fontWeight: '800',
     color: '#171e19',
-    lineHeight: '1.4'
+    lineHeight: '1.45'
   },
   explanationText: {
-    fontSize: '13px',
+    fontSize: '13.5px',
     fontWeight: '600',
     color: '#576561',
     lineHeight: '1.5'
@@ -358,7 +501,7 @@ const styles = {
     padding: '8px 12px',
     backgroundColor: 'rgba(238, 235, 227, 0.6)',
     borderRadius: '12px',
-    marginBottom: '8px'
+    marginBottom: '6px'
   },
   speechPaceTitle: {
     fontSize: '10px',
@@ -373,23 +516,23 @@ const styles = {
     borderRadius: '8px'
   },
   repeatQuoteCard: {
-    backgroundColor: 'rgba(23, 30, 25, 0.04)',
+    backgroundColor: 'rgba(238, 235, 227, 0.4)',
     borderLeft: '4px solid #ca0013',
     borderRadius: '12px',
-    padding: '12px 14px'
+    padding: '14px 16px'
   },
   verbatimText: {
     fontSize: '17px',
     fontWeight: '800',
     color: '#171e19',
-    lineHeight: '1.5'
+    lineHeight: '1.55'
   },
   loadingContainer: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '24px 12px',
+    padding: '28px 12px',
     gap: '12px',
     textAlign: 'center'
   },
