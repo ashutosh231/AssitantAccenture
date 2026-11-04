@@ -7,7 +7,7 @@ import { RecordingControls } from '../components/RecordingControls';
 import { AssessmentPickerModal } from '../components/AssessmentPickerModal';
 import { countWords } from '../utils/transcriptHelpers';
 
-export function AITranscribeScreen() {
+export function AITranscribeScreen({ transcribeOnly = false }) {
   const {
     listeningStatus,
     finalizedSegments,
@@ -85,43 +85,50 @@ export function AITranscribeScreen() {
 
   return (
     <div className="screen" style={styles.screen}>
-      <div className="scroll-content">
-        {/* 1. Horizontal Scroll Selector: 7 Categories with 56x56 square & 160px active pill */}
-        <AssessmentTypeSelector
-          selectedType={selectedAssessmentType}
-          onSelectType={setSelectedAssessmentType}
-        />
+      <div
+        className={`scroll-content ${transcribeOnly ? 'standalone' : ''}`}
+        style={transcribeOnly ? { display: 'flex', flexDirection: 'column', height: '100%', padding: '14px 16px', gap: '10px' } : undefined}
+      >
+        {!transcribeOnly && (
+          <>
+            {/* 1. Horizontal Scroll Selector: 7 Categories with 56x56 square & 160px active pill */}
+            <AssessmentTypeSelector
+              selectedType={selectedAssessmentType}
+              onSelectType={setSelectedAssessmentType}
+            />
 
-        {/* 2. Hero Feature Card: compact — status pill, title, waveform only */}
-        <div className="hero-card" style={styles.heroCardCompact}>
-          <div className="hero-top-row">
-            <div style={styles.heroTitleGroup}>
-              <div className="icon-holder-64" style={styles.heroIconSmall}>{currentEmoji}</div>
-              <div>
-                <span style={styles.heroSubheader}>{selectedAssessmentType}</span>
+            {/* 2. Hero Feature Card: compact — status pill, title, waveform only */}
+            <div className="hero-card" style={styles.heroCardCompact}>
+              <div className="hero-top-row">
+                <div style={styles.heroTitleGroup}>
+                  <div className="icon-holder-64" style={styles.heroIconSmall}>{currentEmoji}</div>
+                  <div>
+                    <span style={styles.heroSubheader}>{selectedAssessmentType}</span>
+                  </div>
+                </div>
+                <div style={styles.heroStatusPill}>
+                  <div
+                    style={{
+                      ...styles.statusDot,
+                      backgroundColor: listeningStatus === 'listening' ? '#ca0013' : '#b7c6c2',
+                      boxShadow: listeningStatus === 'listening' ? '0 0 8px rgba(202, 0, 19, 0.6)' : 'none'
+                    }}
+                  />
+                  <span style={styles.statusLabel}>
+                    {listeningStatus === 'listening' ? 'LIVE' : listeningStatus.toUpperCase()}
+                  </span>
+                </div>
               </div>
-            </div>
-            <div style={styles.heroStatusPill}>
-              <div
-                style={{
-                  ...styles.statusDot,
-                  backgroundColor: listeningStatus === 'listening' ? '#ca0013' : '#b7c6c2',
-                  boxShadow: listeningStatus === 'listening' ? '0 0 8px rgba(202, 0, 19, 0.6)' : 'none'
-                }}
-              />
-              <span style={styles.statusLabel}>
-                {listeningStatus === 'listening' ? 'LIVE' : listeningStatus.toUpperCase()}
-              </span>
-            </div>
-          </div>
 
-          {/* Waveform Visualizer */}
-          <AudioWaveform
-            listeningStatus={listeningStatus}
-            audioLevel={audioLevel}
-            sessionDuration={sessionDuration}
-          />
-        </div>
+              {/* Waveform Visualizer */}
+              <AudioWaveform
+                listeningStatus={listeningStatus}
+                audioLevel={audioLevel}
+                sessionDuration={sessionDuration}
+              />
+            </div>
+          </>
+        )}
 
         {/* 3. Error Banner (if any) */}
         {transcribeError && (
@@ -131,25 +138,56 @@ export function AITranscribeScreen() {
           </div>
         )}
 
-        {/* 4. Single Unified Transcript Box (All speech kept in 1 continuous box, even across pauses) */}
-        <div style={styles.feedSection}>
+        {/* 4. Single Unified Big Transcript Box */}
+        <div
+          style={{
+            ...styles.feedSection,
+            ...(transcribeOnly ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {})
+          }}
+        >
           <div style={styles.feedHeaderRow}>
-            <span style={styles.feedHeaderLabel}>LIVE CAPTURED TRANSCRIPT</span>
+            <span style={styles.feedHeaderLabel}>
+              {transcribeOnly ? 'LIVE TRANSCRIBE' : 'LIVE CAPTURED TRANSCRIPT'}
+            </span>
             <span style={styles.feedCountLabel}>
               {totalWords} word{totalWords === 1 ? '' : 's'}
             </span>
           </div>
 
-          <div className="feed-card" style={styles.unifiedCard}>
+          <div
+            className="feed-card"
+            style={{
+              ...styles.unifiedCard,
+              ...(transcribeOnly
+                ? {
+                    flex: 1,
+                    minHeight: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '16px 18px',
+                    borderRadius: '24px'
+                  }
+                : {})
+            }}
+          >
             {/* Box Header */}
             <div style={styles.boxTopRow}>
               <div style={styles.boxTitleGroup}>
-                <div className="feed-icon-56" style={{ width: '36px', height: '36px', borderRadius: '12px' }}>
-                  <Volume2 size={17} />
+                <div
+                  className="feed-icon-56"
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '12px',
+                    backgroundColor: listeningStatus === 'listening' ? '#ca0013' : 'var(--bg-charcoal)',
+                    color: '#ffffff'
+                  }}
+                >
+                  {listeningStatus === 'listening' ? <Mic size={17} /> : <Volume2 size={17} />}
                 </div>
                 <div style={styles.boxTagRow}>
-                  <span style={styles.boxTitle}>
-                    {listeningStatus === 'listening' ? 'LISTENING…' : 'SPEECH FEED'}
+                  <span style={{ ...styles.boxTitle, fontSize: transcribeOnly ? '13.5px' : '12.5px' }}>
+                    {listeningStatus === 'listening' ? 'LISTENING TO SPEECH…' : 'TRANSCRIBED SPEECH'}
                   </span>
                   {listeningStatus === 'listening' && (
                     <span style={styles.liveBadge}>
@@ -171,14 +209,49 @@ export function AITranscribeScreen() {
               )}
             </div>
 
-            {/* Box Body: Continuous Text */}
-            <div style={styles.boxBody}>
+            {/* Box Body: Continuous Text in Big Box */}
+            <div
+              style={{
+                ...styles.boxBody,
+                ...(transcribeOnly
+                  ? {
+                      flex: 1,
+                      maxHeight: 'none',
+                      minHeight: 0,
+                      paddingTop: '12px',
+                      overflowY: 'auto'
+                    }
+                  : {})
+              }}
+            >
               {!hasContent ? (
-                <p style={styles.placeholderText}>
-                  Tap <strong>Listen</strong> — laptop speech flows in here.
-                </p>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: transcribeOnly ? '100%' : 'auto',
+                    minHeight: transcribeOnly ? '200px' : 'auto',
+                    gap: '10px',
+                    color: '#7b8a86',
+                    padding: transcribeOnly ? '40px 16px' : '10px 0',
+                    textAlign: 'center'
+                  }}
+                >
+                  {transcribeOnly && <Volume2 size={32} style={{ opacity: 0.35 }} />}
+                  <p style={{ ...styles.placeholderText, fontSize: transcribeOnly ? '14.5px' : '13px' }}>
+                    Tap <strong>Listen</strong> below — laptop speech will be transcribed here.
+                  </p>
+                </div>
               ) : (
-                <p style={styles.continuousText}>
+                <p
+                  style={{
+                    ...styles.continuousText,
+                    fontSize: transcribeOnly ? '17px' : '15.5px',
+                    lineHeight: transcribeOnly ? '1.7' : '1.6'
+                  }}
+                >
                   {finalizedText}
                   {interimTranscript && (
                     <span style={styles.interimText}>
@@ -202,17 +275,20 @@ export function AITranscribeScreen() {
           onSendToAI={handleOpenPicker}
           onNewTranscript={newTranscript}
           onClearTranscript={clearTranscript}
+          hideSendToAi={transcribeOnly}
         />
       </div>
 
-      {/* 6. Assessment Type Selection Bottom Sheet */}
-      <AssessmentPickerModal
-        isOpen={isPickerOpen}
-        onClose={() => setIsPickerOpen(false)}
-        transcriptText={liveTranscriptText}
-        selectedType={selectedAssessmentType}
-        onSelectAndSubmit={handleSelectAndSubmit}
-      />
+      {/* 6. Assessment Type Selection Bottom Sheet (only for full app mode) */}
+      {!transcribeOnly && (
+        <AssessmentPickerModal
+          isOpen={isPickerOpen}
+          onClose={() => setIsPickerOpen(false)}
+          transcriptText={liveTranscriptText}
+          selectedType={selectedAssessmentType}
+          onSelectAndSubmit={handleSelectAndSubmit}
+        />
+      )}
     </div>
   );
 }

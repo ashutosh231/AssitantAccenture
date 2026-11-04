@@ -7,7 +7,8 @@ export function RecordingControls({
   onTogglePlayPause,
   onSendToAI,
   onNewTranscript,
-  onClearTranscript
+  onClearTranscript,
+  hideSendToAi = false
 }) {
   const [confirmModal, setConfirmModal] = useState(null); // 'new' | 'clear' | null
 
@@ -41,7 +42,14 @@ export function RecordingControls({
 
   return (
     <>
-      <div style={styles.container}>
+      <div
+        style={{
+          ...styles.container,
+          gridTemplateColumns: hideSendToAi
+            ? '1.5fr 1fr 1fr'
+            : '1.1fr 1.6fr 0.9fr 0.9fr'
+        }}
+      >
         {/* 1. Play / Pause Control */}
         <button
           onClick={onTogglePlayPause}
@@ -67,24 +75,26 @@ export function RecordingControls({
           </span>
         </button>
 
-        {/* 2. Send to AI (Vibrant Red High-Impact CTA) */}
-        <button
-          onClick={onSendToAI}
-          style={{
-            ...styles.controlBtn,
-            ...styles.sendAiBtn,
-            opacity: hasContent ? 1 : 0.65,
-            cursor: hasContent ? 'pointer' : 'not-allowed'
-          }}
-          disabled={!hasContent}
-          title={hasContent ? 'Submit snapshot to Amazon Bedrock' : 'Capture speech before submitting'}
-        >
-          <div style={styles.sendAiContent}>
-            <Sparkles size={18} color="#ffffff" />
-            <span style={styles.sendAiLabel}>Send to AI</span>
-          </div>
-          <span style={styles.sendAiSub}>Choose Category</span>
-        </button>
+        {/* 2. Send to AI (Vibrant Red High-Impact CTA) - only when not hidden */}
+        {!hideSendToAi && (
+          <button
+            onClick={onSendToAI}
+            style={{
+              ...styles.controlBtn,
+              ...styles.sendAiBtn,
+              opacity: hasContent ? 1 : 0.65,
+              cursor: hasContent ? 'pointer' : 'not-allowed'
+            }}
+            disabled={!hasContent}
+            title={hasContent ? 'Submit snapshot to Amazon Bedrock' : 'Capture speech before submitting'}
+          >
+            <div style={styles.sendAiContent}>
+              <Sparkles size={18} color="#ffffff" />
+              <span style={styles.sendAiLabel}>Send to AI</span>
+            </div>
+            <span style={styles.sendAiSub}>Choose Category</span>
+          </button>
+        )}
 
         {/* 3. New Transcript Control */}
         <button
