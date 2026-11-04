@@ -1,11 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, ExternalLink, Layers } from 'lucide-react';
+import { Mic, ArrowRight, ArrowLeft } from 'lucide-react';
 import { AppProvider, useApp } from './src/context/AppContext';
 import { BottomNavbar } from './src/components/BottomNavbar';
 import { AITranscribeScreen } from './src/screens/AITranscribeScreen';
 import { AITextAnswerScreen } from './src/screens/AITextAnswerScreen';
 import { SettingsModal } from './src/components/SettingsModal';
 import './src/styles/theme.css';
+
+function getIsTranscribeRoute() {
+  if (typeof window === 'undefined') return false;
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  if (path === '/transcribe' || path.endsWith('/transcribe')) return true;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('mode') === 'transcribe-only' || params.get('route') === 'transcribe') return true;
+  if (
+    window.location.hash === '#/transcribe' ||
+    window.location.hash === '#transcribe' ||
+    window.location.hash === '#transcribe-only'
+  ) {
+    return true;
+  }
+  return false;
+}
 
 function AppContent() {
   const {
@@ -22,25 +38,18 @@ function AppContent() {
     handleSendToAI
   } = useApp();
 
-  // Check if current view is standalone transcribe-only mode
-  const [isTranscribeOnly, setIsTranscribeOnly] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('mode') === 'transcribe-only' || window.location.hash === '#transcribe-only';
-    }
-    return false;
-  });
+  // Track whether we are on the /transcribe route
+  const [isTranscribeRoute, setIsTranscribeRoute] = useState(getIsTranscribeRoute);
 
   useEffect(() => {
-    const handleUrlChange = () => {
-      const params = new URLSearchParams(window.location.search);
-      setIsTranscribeOnly(params.get('mode') === 'transcribe-only' || window.location.hash === '#transcribe-only');
+    const handleLocationChange = () => {
+      setIsTranscribeRoute(getIsTranscribeRoute());
     };
-    window.addEventListener('popstate', handleUrlChange);
-    window.addEventListener('hashchange', handleUrlChange);
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
     return () => {
-      window.removeEventListener('popstate', handleUrlChange);
-      window.removeEventListener('hashchange', handleUrlChange);
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
     };
   }, []);
 
@@ -56,69 +65,58 @@ function AppContent() {
     }
   };
 
-  // Launch standalone transcribe service in a new window/tab
-  const handleOpenTranscribeWindow = () => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('mode', 'transcribe-only');
-
-    // Attempt opening a focused desktop companion window centered on the screen
-    const popupWidth = 480;
-    const popupHeight = 840;
-    const left = typeof window.screen !== 'undefined' ? Math.round((window.screen.width - popupWidth) / 2) : 100;
-    const top = typeof window.screen !== 'undefined' ? Math.round((window.screen.height - popupHeight) / 2) : 100;
-
-    const windowFeatures = `width=${popupWidth},height=${popupHeight},top=${top},left=${left},resizable=yes,scrollbars=yes`;
-    const newWindow = window.open(url.toString(), 'AccentureCommAITranscribe', windowFeatures);
-
-    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-      // Fallback in case popup features were blocked by the browser
-      window.open(url.toString(), '_blank');
-    } else {
-      newWindow.focus();
+  // Client-side route transition without opening a new window
+  const navigateTo = (path) => {
+    try {
+      window.history.pushState({}, '', path);
+    } catch {
+      window.location.hash = path === '/' ? '' : path;
     }
+    setIsTranscribeRoute(getIsTranscribeRoute());
   };
 
-  // Return to full multi-screen Comm AI experience
-  const handleOpenFullApp = () => {
-    const url = new URL(window.location.href);
-    url.searchParams.delete('mode');
-    window.location.href = url.pathname + (url.search ? url.search : '');
+  const handleGoToTranscribe = () => {
+    navigateTo('/transcribe');
+  };
+
+  const handleGoToFullApp = () => {
+    navigateTo('/');
   };
 
   return (
-    <div className={`app-container ${isTranscribeOnly ? 'standalone-mode' : ''}`}>
-      {/* Header: Top-aligned with greeting label, title, transcribe launch button, and profile avatar */}
+    <div className={`app-container ${isTranscribeRoute ? 'standalone-mode' : ''}`}>
+      {/* Header: Top-aligned with greeting label, title, route toggle button, and profile avatar */}
       <header className="app-header">
         <div className="header-left">
           <span className="header-greeting-label">ACCENTURE ASSESSMENT</span>
           <h1 className="header-title-bold">
-            {isTranscribeOnly ? 'Transcribe Service' : 'Comm AI'}
+            {isTranscribeRoute ? 'Transcribe Service' : 'Comm AI'}
           </h1>
         </div>
 
         <div className="header-right">
-          {/* Button on the left of profile icon to redirect to standalone transcribe window */}
-          {!isTranscribeOnly ? (
+          {/* Button on the left of profile icon to route between / and /transcribe */}
+          {!isTranscribeRoute ? (
             <button
               type="button"
-              onClick={handleOpenTranscribeWindow}
+              onClick={handleGoToTranscribe}
               className="transcribe-launch-btn"
-              title="Open Transcribe Service in New Window"
-              aria-label="Open Transcribe Service in New Window"
+              title="Go to Transcribe Service (/transcribe)"
+              aria-label="Go to Transcribe Service"
             >
               <Mic size={16} className="transcribe-launch-mic" />
               <span className="transcribe-launch-text">Transcribe</span>
-              <ExternalLink size={12} className="transcribe-launch-icon" />
+              <ArrowRight size={13} className="transcribe-launch-icon" />
             </button>
           ) : (
             <button
               type="button"
-              onClick={handleOpenFullApp}
+              onClick={handleGoToFullApp}
               className="transcribe-launch-btn"
-              title="Switch to Full Comm AI Application"
-              aria-label="Switch to Full Comm AI Application"
+              title="Return to Full Comm AI Application (/)"
+              aria-label="Return to Full Comm AI Application"
             >
-              <Layers size={15} />
+              <ArrowLeft size={14} />
               <span className="transcribe-launch-text">Full App</span>
             </button>
           )}
@@ -137,22 +135,22 @@ function AppContent() {
       </header>
 
       {/* Main Screen Viewport:
-          In transcribe-only mode, only AITranscribeScreen is rendered.
-          In full mode, both screens stay mounted to preserve Web Audio streams,
+          On /transcribe route, only AITranscribeScreen is rendered as a big box.
+          On root / route, both screens stay mounted to preserve Web Audio streams,
           WebSocket connections, and state during tab switching. */}
       <main className="screens-viewport">
         <div
           style={{
-            display: (isTranscribeOnly || activeTab === 'transcribe') ? 'flex' : 'none',
+            display: (isTranscribeRoute || activeTab === 'transcribe') ? 'flex' : 'none',
             flex: 1,
             height: '100%',
             overflow: 'hidden'
           }}
         >
-          <AITranscribeScreen transcribeOnly={isTranscribeOnly} />
+          <AITranscribeScreen transcribeOnly={isTranscribeRoute} />
         </div>
 
-        {!isTranscribeOnly && (
+        {!isTranscribeRoute && (
           <div
             style={{
               display: activeTab === 'answer' ? 'flex' : 'none',
@@ -166,8 +164,8 @@ function AppContent() {
         )}
       </main>
 
-      {/* Floating Navigation Pill with Center Action FAB - only shown in full application mode */}
-      {!isTranscribeOnly && (
+      {/* Floating Navigation Pill with Center Action FAB - only shown on root full app route */}
+      {!isTranscribeRoute && (
         <BottomNavbar
           activeTab={activeTab}
           onTabChange={setActiveTab}

@@ -1,40 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-function isTranscribeOnlyMode(urlString) {
+function isTranscribeRoute(urlString) {
   const url = new URL(urlString);
-  return (
-    url.searchParams.get('mode') === 'transcribe-only' ||
-    url.hash === '#transcribe-only'
-  );
+  const cleanPath = url.pathname.replace(/\/+$/, '') || '/';
+  if (cleanPath === '/transcribe' || cleanPath.endsWith('/transcribe')) return true;
+  if (url.searchParams.get('mode') === 'transcribe-only' || url.searchParams.get('route') === 'transcribe') return true;
+  if (url.hash === '#/transcribe' || url.hash === '#transcribe' || url.hash === '#transcribe-only') return true;
+  return false;
 }
 
-function buildTranscribeOnlyUrl(currentUrlString) {
-  const url = new URL(currentUrlString);
-  url.searchParams.set('mode', 'transcribe-only');
-  return url.toString();
-}
-
-function buildFullAppUrl(transcribeOnlyUrlString) {
-  const url = new URL(transcribeOnlyUrlString);
-  url.searchParams.delete('mode');
-  return url.toString();
-}
-
-test('isTranscribeOnlyMode correctly detects query parameter and hash', () => {
-  assert.equal(isTranscribeOnlyMode('http://localhost:5173/'), false);
-  assert.equal(isTranscribeOnlyMode('http://localhost:5173/?mode=transcribe-only'), true);
-  assert.equal(isTranscribeOnlyMode('http://localhost:5173/#transcribe-only'), true);
-  assert.equal(isTranscribeOnlyMode('http://localhost:5173/?other=1#transcribe-only'), true);
+test('isTranscribeRoute correctly detects /transcribe route', () => {
+  assert.equal(isTranscribeRoute('http://localhost:5173/'), false);
+  assert.equal(isTranscribeRoute('http://localhost:5173/transcribe'), true);
+  assert.equal(isTranscribeRoute('http://localhost:5173/transcribe/'), true);
+  assert.equal(isTranscribeRoute('http://localhost:5173/#/transcribe'), true);
+  assert.equal(isTranscribeRoute('http://localhost:5173/?mode=transcribe-only'), true);
 });
 
-test('buildTranscribeOnlyUrl appends mode parameter properly', () => {
-  const url = buildTranscribeOnlyUrl('http://localhost:5173/');
-  assert.equal(url, 'http://localhost:5173/?mode=transcribe-only');
+test('isTranscribeRoute returns false for root and other paths', () => {
+  assert.equal(isTranscribeRoute('http://localhost:5173/'), false);
+  assert.equal(isTranscribeRoute('http://localhost:5173/answer'), false);
 });
 
-test('buildFullAppUrl removes mode parameter properly to return to full app', () => {
-  const fullUrl = buildFullAppUrl('http://localhost:5173/?mode=transcribe-only');
-  assert.equal(fullUrl, 'http://localhost:5173/');
-});
 
